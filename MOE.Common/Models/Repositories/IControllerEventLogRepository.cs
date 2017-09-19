@@ -10,7 +10,7 @@ namespace MOE.Common.Models.Repositories
     {
         double GetTMCVolume(DateTime startDate, DateTime endDate, string signalID, int phase);
         List<MOE.Common.Models.Controller_Event_Log> GetSplitEvents(string signalID, DateTime startTime, DateTime endTime);
-        List<MOE.Common.Models.Controller_Event_Log> GetSignalEventsByEventCode(string signalID, 
+        List<MOE.Common.Models.Controller_Event_Log> GetSignalEventsByEventCode(string signalID,
             DateTime startTime, DateTime endTime, int eventCode);
         List<MOE.Common.Models.Controller_Event_Log> GetSignalEventsByEventCodes(string signalID,
             DateTime startTime, DateTime endTime, List<int> eventCodes);
@@ -28,6 +28,5 @@ namespace MOE.Common.Models.Repositories
              DateTime startTime, DateTime endTime, int detectorChannel);
         int GetRecordCount(string signalID, DateTime startTime, DateTime endTime);
         DateTime GetMostRecentRecordTimestamp(string signalID);
-
     }
 }
