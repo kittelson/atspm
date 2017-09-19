@@ -78,6 +78,20 @@ namespace DecodeSiemensLogs
             }
         }
 
+        // returns true if the filename indicates new data
+        // standard Sepac filename format such as SIEM_50.73.234.81_2017_09_11_1700
+        // and 60 minutes per file
+        private bool NewDataFile(string file, DateTime lastrecord)
+        {
+            string[] filename = file.Split('_');
+            var filetime = new DateTime(Int32.Parse(filename[2]),
+                                        Int32.Parse(filename[3]),
+                                        Int32.Parse(filename[4]),
+                                        Int32.Parse(filename[5]),
+                                        59,
+                                        59);
+            return (lastrecord < filetime);
+        }
         private void DecodeSiemens(string dir)
         {
 
@@ -220,7 +234,8 @@ namespace DecodeSiemensLogs
             }
 
 
-
+            MOE.Common.Models.Repositories.IControllerEventLogRepository celRepository =
+            MOE.Common.Models.Repositories.ControllerEventLogRepositoryFactory.Create();
             var options = new ParallelOptions { MaxDegreeOfParallelism = Convert.ToInt32(Properties.Settings.Default.MaxThreads) };
             Parallel.ForEach(dirList.AsEnumerable(), options, dir =>
             //Parallel.ForEach(dirList.AsEnumerable(), dir =>
@@ -232,15 +247,23 @@ namespace DecodeSiemensLogs
                 string[] strsplit = dir.Split(new char[] { '\\' });
                 string dirname = strsplit.Last();
                 string sigid = dirname;
-
+                var lastRecord = celRepository.GetMostRecentRecordTimestamp(sigid);
+                var dstOffset = Math.Abs(DateTimeOffset.Now.Offset.Hours);
+                int skippedrecords = 0;
                 Console.WriteLine("Starting signal " + dirname);
 
 
                 var options1 = new ParallelOptions { MaxDegreeOfParallelism = Convert.ToInt32(Properties.Settings.Default.MaxThreads) };
                 Parallel.ForEach(Directory.GetFiles(dir, "*.csv"), options1, file =>
-                //Parallel.ForEach(Directory.GetFiles(dir, "*.csv"), file =>
-                //foreach (string file in Directory.GetFiles(dir, "*.csv"))
                 {
+                    if (!NewDataFile(file, lastRecord))
+                    {
+                        if (Properties.Settings.Default.WriteToConsole)
+                        {
+                            Console.WriteLine(String.Format("Skipping {0}, we already have data later than this.", file));
+                        }
+                        return;
+                    }
                     DataTable elTable = new DataTable();
                     //elTable.Rows.Add(sigid, timeStamp, eventCode, eventParam);
                     elTable.Columns.Add("sigid", System.Type.GetType("System.String"));
@@ -310,8 +333,13 @@ new UniqueConstraint(new DataColumn[] { elTable.Columns[0],
                                 try
                                 {
                                     timeStamp = Convert.ToDateTime(lineSplit[0]);
-                                    timeStamp = timeStamp + TimeSpan.FromHours(5);
-                                    //    timeStamp = timeStamp.AddHours(5);
+                                    timeStamp = timeStamp + TimeSpan.FromHours(dstOffset);
+                                    if (timeStamp < lastRecord)
+                                    {
+                                        skippedrecords++;
+                                        continue;
+                                    }
+                                        
                                 }
                                 catch (Exception ex)
                                 {
@@ -369,7 +397,7 @@ new UniqueConstraint(new DataColumn[] { elTable.Columns[0],
 
                         if (Properties.Settings.Default.WriteToConsole)
                         {
-                            Console.WriteLine("NEXT LINE");
+                            //Console.WriteLine("NEXT LINE");
 
                         }
                     }
@@ -381,7 +409,7 @@ new UniqueConstraint(new DataColumn[] { elTable.Columns[0],
 
                     if (Properties.Settings.Default.WriteToConsole)
                     {
-                        Console.WriteLine("$$$ Entire file has been read $$$");
+                        Console.WriteLine(String.Format("$$$ Entire file has been read $$$ Skipped {0} records", skippedrecords));
 
                     }
 

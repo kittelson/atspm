@@ -315,5 +315,22 @@ namespace MOE.Common.Models.Repositories
                 throw;
             }
         }
+
+        public DateTime GetMostRecentRecordTimestamp(string signalID)
+        {
+            DateTime twoDaysAgo = DateTime.Now.AddDays(-2);
+            MOE.Common.Models.Controller_Event_Log row = (from r in db.Controller_Event_Log
+                                                          where r.SignalID == signalID && r.Timestamp > twoDaysAgo
+                                                          orderby r.Timestamp descending
+                                                          select r).Take(1).FirstOrDefault();
+            if (row != null)
+            {
+                return row.Timestamp;
+            }
+            else
+            {
+                return twoDaysAgo;
+            }
+        }
     }
 }
