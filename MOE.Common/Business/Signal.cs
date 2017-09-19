@@ -234,7 +234,7 @@ namespace MOE.Common.Business
 
                     task.Wait(token2);
 
-                    if (token2.IsCancellationRequested)
+                    if (token2.IsCancellationRequested) 
                     {
                         token2.ThrowIfCancellationRequested();
                     }
