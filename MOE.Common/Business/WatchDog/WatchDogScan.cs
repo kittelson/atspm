@@ -20,24 +20,27 @@ namespace MOE.Common.Business.WatchDog
             new ConcurrentBag<MOE.Common.Models.Signal>();
         public ConcurrentBag<MOE.Common.Models.Signal> signalsNoRecords =
             new ConcurrentBag<MOE.Common.Models.Signal>();
-        ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> ForceOffErrors = 
+        ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> ForceOffErrors =
             new ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent>();
-        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> MaxOutErrors = 
+        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> MaxOutErrors =
             new ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent>();
-        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> LowHitCountErrors = 
+        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> LowHitCountErrors =
             new ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent>();
-        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> MissingRecords = 
+        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> MissingRecords =
             new ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent>();
-        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> StuckPedErrors = 
+        public ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent> StuckPedErrors =
             new ConcurrentBag<MOE.Common.Models.SPMWatchDogErrorEvent>();
         public List<SPMWatchDogErrorEvent> RecordsFromTheDayBefore = new List<SPMWatchDogErrorEvent>();
 
-        public WatchDogScan(DateTime scanDate)
+        public WatchDogScan(DateTime scanDate, string smtp, string to, string from)
         {
             this.ScanDate = scanDate;
             MOE.Common.Models.Repositories.IApplicationSettingsRepository settingsRepository =
                 MOE.Common.Models.Repositories.ApplicationSettingsRepositoryFactory.Create();
             this.Settings = settingsRepository.GetWatchDogSettings();
+            Settings.EmailServer = smtp;
+            Settings.FromEmailAddress = from;
+            Settings.DefaultEmailAddress = to;
         }
 
         public void StartScan()
@@ -64,8 +67,8 @@ namespace MOE.Common.Business.WatchDog
             ParallelOptions options = new ParallelOptions();
             options.MaxDegreeOfParallelism = Settings.MaxDegreeOfParallelism;
 
-           Parallel.ForEach(signals, options, signal =>
-                //foreach(var signal in signals)
+            Parallel.ForEach(signals, options, signal =>
+            //foreach(var signal in signals)
             {
                 MOE.Common.Business.AnalysisPhaseCollection APcollection =
                     new MOE.Common.Business.AnalysisPhaseCollection(signal.SignalID,
@@ -90,9 +93,9 @@ namespace MOE.Common.Business.WatchDog
             DateTime AnalysisEnd = ScanDate.Date + endHour;
             ParallelOptions options = new ParallelOptions();
             options.MaxDegreeOfParallelism = Settings.MaxDegreeOfParallelism;
-            
+
             Parallel.ForEach(signalsWithRecords, options, signal =>
-            {                
+            {
                 CheckForLowDetectorHits(signal);
             }
             );
@@ -104,7 +107,7 @@ namespace MOE.Common.Business.WatchDog
             ParallelOptions options = new ParallelOptions();
             options.MaxDegreeOfParallelism = Settings.MaxDegreeOfParallelism;
             Parallel.ForEach(signals, options, signal =>
-            {                
+            {
                 if (Settings.WeekdayOnly && ScanDate.DayOfWeek == DayOfWeek.Monday)
                 {
                     CheckSignalRecordCount(ScanDate.AddDays(-2), signal);
@@ -154,7 +157,7 @@ namespace MOE.Common.Business.WatchDog
             {
                 message.To.Add(user.Email);
             }
-            message.To.Add(Settings.DefaultEmailAddress);    
+            message.To.Add(Settings.DefaultEmailAddress);
             message.Subject = "ATSPM Alerts for " + ScanDate.ToShortDateString();
             message.From = new System.Net.Mail.MailAddress(Settings.FromEmailAddress);
             string missingErrors = SortAndAddToMessage(MissingRecords);
@@ -221,7 +224,7 @@ namespace MOE.Common.Business.WatchDog
             if (LowHitCountErrors.Count > 0 && countErrors != "")
             {
                 message.Body += " \n --The following signals had unusually low advanced detection counts on ";
-                     if (Settings.WeekdayOnly && ScanDate.DayOfWeek == DayOfWeek.Monday)
+                if (Settings.WeekdayOnly && ScanDate.DayOfWeek == DayOfWeek.Monday)
                 {
 
                     message.Body += ScanDate.AddDays(-3).ToShortDateString() + " between ";
@@ -282,7 +285,7 @@ namespace MOE.Common.Business.WatchDog
                     DateTime end = new DateTime();
                     if (Settings.WeekdayOnly && ScanDate.DayOfWeek == DayOfWeek.Monday)
                     {
-                        start = ScanDate.AddDays(-3).Date.AddHours(Settings.PreviousDayPMPeakStart);                        
+                        start = ScanDate.AddDays(-3).Date.AddHours(Settings.PreviousDayPMPeakStart);
                         end = ScanDate.AddDays(-3).Date.AddHours(Settings.PreviousDayPMPeakEnd);
                     }
                     else
@@ -300,7 +303,7 @@ namespace MOE.Common.Business.WatchDog
                         error.Phase = detector.Approach.ProtectedPhaseNumber;
                         error.TimeStamp = ScanDate;
                         error.Direction = detector.Approach.DirectionType.Description;
-                        error.Message = "Count: "+ currentVolume.ToString();
+                        error.Message = "Count: " + currentVolume.ToString();
                         error.ErrorCode = 2;
                         if (!LowHitCountErrors.Contains(error))
                         {
@@ -314,14 +317,14 @@ namespace MOE.Common.Business.WatchDog
                     MOE.Common.Models.Repositories.IApplicationEventRepository er =
                         MOE.Common.Models.Repositories.ApplicationEventRepositoryFactory.Create();
 
-                    er.QuickAdd("SPMWatchDog", "Program", "CheckForLowDetectorHits", 
+                    er.QuickAdd("SPMWatchDog", "Program", "CheckForLowDetectorHits",
                         MOE.Common.Models.ApplicationEvent.SeverityLevels.Medium, detector.DetectorID + "-" + ex.Message);
                 }
             }
             //);
         }
 
-        private void CheckForStuckPed(MOE.Common.Business.AnalysisPhase phase,  MOE.Common.Models.Signal signal)
+        private void CheckForStuckPed(MOE.Common.Business.AnalysisPhase phase, MOE.Common.Models.Signal signal)
         {
             if (phase.PedestrianEvents.Count > Settings.MaximumPedestrianEvents)
             {
@@ -329,13 +332,13 @@ namespace MOE.Common.Business.WatchDog
                 error.SignalID = signal.SignalID;
                 error.Phase = phase.PhaseNumber;
                 error.TimeStamp = ScanDate;
-                error.Direction = phase.Direction??"";
+                error.Direction = phase.Direction ?? "";
                 error.Message = phase.PedestrianEvents.Count.ToString() +
                         " Pedestrian Activations";
                 error.ErrorCode = 3;
                 if (!StuckPedErrors.Contains(error))
                 {
-                    Console.WriteLine("Signal " + signal.SignalID + phase.PedestrianEvents.Count.ToString() + 
+                    Console.WriteLine("Signal " + signal.SignalID + phase.PedestrianEvents.Count.ToString() +
                         " Pedestrian Activations");
                     StuckPedErrors.Add(error);
                 }
@@ -344,13 +347,13 @@ namespace MOE.Common.Business.WatchDog
 
         private void CheckForForceOff(MOE.Common.Business.AnalysisPhase phase, MOE.Common.Models.Signal signal)
         {
-            if (phase.PercentForceOffs > Settings.PercentThreshold && phase.TerminationEvents.Where(t=>t.EventCode !=7).Count() > Settings.MinPhaseTerminations)
+            if (phase.PercentForceOffs > Settings.PercentThreshold && phase.TerminationEvents.Where(t => t.EventCode != 7).Count() > Settings.MinPhaseTerminations)
             {
                 MOE.Common.Models.SPMWatchDogErrorEvent error = new MOE.Common.Models.SPMWatchDogErrorEvent();
                 error.SignalID = signal.SignalID;
                 error.Phase = phase.PhaseNumber;
                 error.TimeStamp = ScanDate;
-                error.Direction = phase.Direction??"";
+                error.Direction = phase.Direction ?? "";
                 error.Message = "Force Offs " + Math.Round(phase.PercentForceOffs * 100, 1).ToString() + "%";
                 error.ErrorCode = 4;
                 if (!ForceOffErrors.Contains(error))
@@ -369,36 +372,36 @@ namespace MOE.Common.Business.WatchDog
                 error.SignalID = signal.SignalID;
                 error.Phase = phase.PhaseNumber;
                 error.TimeStamp = ScanDate;
-                error.Direction = phase.Direction??"";
+                error.Direction = phase.Direction ?? "";
                 error.Message = "Max Outs " + Math.Round(phase.PercentMaxOuts * 100, 1).ToString() + "%";
                 error.ErrorCode = 5;
-               
-                    if (MaxOutErrors.Count == 0 || !MaxOutErrors.Contains(error))
-                    {
-                        Console.WriteLine("Signal " + signal.SignalID + "Has MaxOut Errors");
-                        MaxOutErrors.Add(error);
-                    }
-                
+
+                if (MaxOutErrors.Count == 0 || !MaxOutErrors.Contains(error))
+                {
+                    Console.WriteLine("Signal " + signal.SignalID + "Has MaxOut Errors");
+                    MaxOutErrors.Add(error);
+                }
+
 
             }
         }
 
-        private void SendMessage( System.Net.Mail.MailMessage message)
+        private void SendMessage(System.Net.Mail.MailMessage message)
         {
             MOE.Common.Models.Repositories.IApplicationEventRepository er =
                                 MOE.Common.Models.Repositories.ApplicationEventRepositoryFactory.Create();
             System.Net.Mail.SmtpClient smtp = new System.Net.Mail.SmtpClient(Settings.EmailServer);
             try
             {
-            Console.WriteLine("Sent message to: " + message.To.ToString() + "\nMessage text: " + message.Body + "\n");
-            smtp.Send(message);
-            System.Threading.Thread.Sleep(5000);
-            er.QuickAdd("SPMWatchDog", "Program", "SendMessage",
-                MOE.Common.Models.ApplicationEvent.SeverityLevels.Information,
-                "Email Sent Successfully to: " + message.To.ToString());
+                Console.WriteLine("Sent message to: " + message.To.ToString() + "\nMessage text: " + message.Body + "\n");
+                smtp.Send(message);
+                System.Threading.Thread.Sleep(5000);
+                er.QuickAdd("SPMWatchDog", "Program", "SendMessage",
+                    MOE.Common.Models.ApplicationEvent.SeverityLevels.Information,
+                    "Email Sent Successfully to: " + message.To.ToString());
             }
-            catch(Exception ex)
-            {                            
+            catch (Exception ex)
+            {
                 er.QuickAdd("SPMWatchDog", "Program", "SendMessage",
                     MOE.Common.Models.ApplicationEvent.SeverityLevels.Medium, ex.Message);
             }
@@ -408,72 +411,72 @@ namespace MOE.Common.Business.WatchDog
         {
             MOE.Common.Models.Repositories.ISPMWatchDogErrorEventRepository watchDogErrorEventRepository =
                 MOE.Common.Models.Repositories.SPMWatchDogErrorEventRepositoryFactory.Create();
-            List<MOE.Common.Models.SPMWatchDogErrorEvent> SortedErrors = 
+            List<MOE.Common.Models.SPMWatchDogErrorEvent> SortedErrors =
                 errors.OrderBy(x => x.SignalID).ThenBy(x => x.Phase).ToList();
 
-                string ErrorMessage = "";
+            string ErrorMessage = "";
 
-                foreach (MOE.Common.Models.SPMWatchDogErrorEvent error in SortedErrors)
+            foreach (MOE.Common.Models.SPMWatchDogErrorEvent error in SortedErrors)
+            {
+                //List<SPMWatchDogErrorEvent> RecordsFromTheDayBefore = new List<SPMWatchDogErrorEvent>();
+                //compare to error log to see if this was failing yesterday
+                if (Settings.WeekdayOnly && ScanDate.DayOfWeek == DayOfWeek.Monday)
                 {
-                    //List<SPMWatchDogErrorEvent> RecordsFromTheDayBefore = new List<SPMWatchDogErrorEvent>();
-                    //compare to error log to see if this was failing yesterday
-                    if (Settings.WeekdayOnly && ScanDate.DayOfWeek == DayOfWeek.Monday)
+                    RecordsFromTheDayBefore =
+                        watchDogErrorEventRepository.GetSPMWatchDogErrorEventsBetweenDates(ScanDate.AddDays(-3), ScanDate.AddDays(-2).AddMinutes(-1));
+                }
+                else
+                {
+                    RecordsFromTheDayBefore =
+                        watchDogErrorEventRepository.GetSPMWatchDogErrorEventsBetweenDates(ScanDate.AddDays(-1), ScanDate.AddMinutes(-1));
+                }
+
+                if (FindMatchingErrorInErrorTable(error) == false)
+                {
+
+                    MOE.Common.Models.Repositories.ISignalsRepository signalRepository =
+                        MOE.Common.Models.Repositories.SignalsRepositoryFactory.Create();
+                    var signal = signalRepository.GetSignalBySignalID(error.SignalID);
+                    //   Add to email if it was not failing yesterday
+                    ErrorMessage += error.SignalID.ToString();
+                    ErrorMessage += " - ";
+                    ErrorMessage += signal.PrimaryName;
+                    ErrorMessage += " & ";
+                    ErrorMessage += signal.SecondaryName;
+                    if (error.Phase > 0)
                     {
-                        RecordsFromTheDayBefore =
-                            watchDogErrorEventRepository.GetSPMWatchDogErrorEventsBetweenDates(ScanDate.AddDays(-3), ScanDate.AddDays(-2).AddMinutes(-1));
+                        ErrorMessage += " - Phase ";
+                        ErrorMessage += error.Phase;
                     }
-                    else
+                    ErrorMessage += " (" + error.Message + ")";
+                    ErrorMessage += "\n";
+                    //}
+
+                }
+            }
+            try
+            {
+                watchDogErrorEventRepository.AddList(errors.ToList());
+
+            }
+            catch (DbEntityValidationException ex)
+            {
+                foreach (var entityValidationErrors in ex.EntityValidationErrors)
+                {
+                    foreach (var validationError in entityValidationErrors.ValidationErrors)
                     {
-                        RecordsFromTheDayBefore =
-                            watchDogErrorEventRepository.GetSPMWatchDogErrorEventsBetweenDates(ScanDate.AddDays(-1), ScanDate.AddMinutes(-1));
-                    }
-
-                    if (FindMatchingErrorInErrorTable(error) == false)
-                    {
-
-                        MOE.Common.Models.Repositories.ISignalsRepository signalRepository =
-                            MOE.Common.Models.Repositories.SignalsRepositoryFactory.Create();
-                        var signal = signalRepository.GetSignalBySignalID(error.SignalID);
-                        //   Add to email if it was not failing yesterday
-                        ErrorMessage += error.SignalID.ToString();
-                        ErrorMessage += " - ";
-                        ErrorMessage += signal.PrimaryName;
-                        ErrorMessage += " & ";
-                        ErrorMessage += signal.SecondaryName;
-                        if (error.Phase > 0)
-                        {
-                            ErrorMessage += " - Phase ";                        
-                            ErrorMessage += error.Phase;
-                        }
-                        ErrorMessage += " (" + error.Message + ")";
-                        ErrorMessage += "\n";
-                        //}
-
+                        Console.WriteLine("Property: " + validationError.PropertyName + " Error: " + validationError.ErrorMessage);
                     }
                 }
-                    try
-                    {
-                        watchDogErrorEventRepository.AddList(errors.ToList());
-
-                    }
-                    catch (DbEntityValidationException ex)
-                    {
-                        foreach (var entityValidationErrors in ex.EntityValidationErrors)
-                        {
-                            foreach (var validationError in entityValidationErrors.ValidationErrors)
-                            {
-                                Console.WriteLine("Property: " + validationError.PropertyName + " Error: " + validationError.ErrorMessage);
-                            }
-                        }
-                    }
-
-                return ErrorMessage;
-                    
             }
-    
+
+            return ErrorMessage;
+
+        }
+
         static private int FindChannel(string SignalID, int Phase)
         {
-            
+
             MOE.Common.Models.Repositories.ISignalsRepository smh = MOE.Common.Models.Repositories.SignalsRepositoryFactory.Create();
             MOE.Common.Models.Signal sig = smh.GetSignalBySignalID(SignalID);
 
@@ -495,13 +498,13 @@ namespace MOE.Common.Business.WatchDog
         private bool FindMatchingErrorInErrorTable(SPMWatchDogErrorEvent error)
         {
             var MatchingRecord = (from r in RecordsFromTheDayBefore
-                                 where error.SignalID == r.SignalID
-                                 && error.DetectorID == r.DetectorID
-                                 && error.ErrorCode == r.ErrorCode
-                                 && error.Phase == r.Phase
-                                 select r).FirstOrDefault();
+                                  where error.SignalID == r.SignalID
+                                  && error.DetectorID == r.DetectorID
+                                  && error.ErrorCode == r.ErrorCode
+                                  && error.Phase == r.Phase
+                                  select r).FirstOrDefault();
 
-            if(MatchingRecord != null)
+            if (MatchingRecord != null)
             {
                 return true;
             }
@@ -536,6 +539,6 @@ namespace MOE.Common.Business.WatchDog
             }
         }
 
-        
+
     }
 }

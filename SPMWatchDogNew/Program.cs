@@ -27,6 +27,9 @@ namespace SPMWatchDogNew
         static void Main(string[] args)
         {
             DateTime StartTime = DateTime.Today;
+            var smtp = Properties.Settings.Default.EmailServer;
+            var to = Properties.Settings.Default.ToAddress;
+            var from = Properties.Settings.Default.FromAddress;
             // find the analysis timespan
             if (args.Length > 0)
             {
@@ -35,7 +38,7 @@ namespace SPMWatchDogNew
                 {
                     StartTime = DateTime.Parse(args[0]);
                     MOE.Common.Business.WatchDog.WatchDogScan scan =
-                        new MOE.Common.Business.WatchDog.WatchDogScan(StartTime);
+                        new MOE.Common.Business.WatchDog.WatchDogScan(StartTime, smtp, to, from);
                     scan.StartScan();
                 }
                 catch (Exception ex)
@@ -49,7 +52,7 @@ namespace SPMWatchDogNew
                 try
                 {
                     MOE.Common.Business.WatchDog.WatchDogScan scan =
-                        new MOE.Common.Business.WatchDog.WatchDogScan(StartTime);
+                        new MOE.Common.Business.WatchDog.WatchDogScan(StartTime, smtp, to, from);
                     scan.StartScan();
                 }
                 catch (Exception ex)
@@ -61,9 +64,9 @@ namespace SPMWatchDogNew
 
         }
     }
-    
+
 }
 
-    
+
 
 
