@@ -15,13 +15,6 @@ using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using MOE.Common;
-using System.Configuration;
-
-
-
-
-
-
 
 namespace FTPfromAllControllers
 {
@@ -30,7 +23,7 @@ namespace FTPfromAllControllers
 
         static void Main(string[] args)
         {
-             MOE.Common.Models.Repositories.IApplicationEventRepository ErrorRepository = MOE.Common.Models.Repositories.ApplicationEventRepositoryFactory.Create();
+            MOE.Common.Models.Repositories.IApplicationEventRepository ErrorRepository = MOE.Common.Models.Repositories.ApplicationEventRepositoryFactory.Create();
             int MaxThreads = Properties.Settings.Default.MaxThreads;
             int SNMPTimeout = Properties.Settings.Default.SNMPTimeout;
             int SNMPRetry = Properties.Settings.Default.SNMPRetry;
@@ -38,8 +31,8 @@ namespace FTPfromAllControllers
             bool DeleteAfterFTP = Properties.Settings.Default.DeleteFilesAfterFTP;
             bool ImportAfterFTP = Properties.Settings.Default.ImportAfterFTP;
             int WaitBetweenFiles = Properties.Settings.Default.WaitBetweenFiles;
-            var connection = ConfigurationManager.ConnectionStrings["SPM"].ConnectionString;
-            MOE.Common.Business.BulkCopyOptions Options = new MOE.Common.Business.BulkCopyOptions(connection, Properties.Settings.Default.DestinationTableName,
+
+            MOE.Common.Business.BulkCopyOptions Options = new MOE.Common.Business.BulkCopyOptions(Properties.Settings.Default.SPM, Properties.Settings.Default.DestinationTableName,
                                Properties.Settings.Default.WriteToConsole, Properties.Settings.Default.forceNonParallel, Properties.Settings.Default.MaxThreads, Properties.Settings.Default.DeleteFiles,
                                Properties.Settings.Default.EarliestAcceptableDate, Properties.Settings.Default.BulkCopyBatchSize, Properties.Settings.Default.BulkCopyTimeOut);
 
@@ -65,12 +58,9 @@ namespace FTPfromAllControllers
                                 Password = f.Password,
                                 FTPDirectory = f.FTPDirectory,
                                 ActiveFTP = f.ActiveFTP
+                            };
 
-        };
-
-
-               
-            var options = new ParallelOptions { MaxDegreeOfParallelism = Properties.Settings.Default.MaxThreads};
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Properties.Settings.Default.MaxThreads };
 
             Parallel.ForEach(SignalsDT.AsEnumerable(), options, row =>
             //foreach (var row in SignalsDT)
@@ -78,23 +68,16 @@ namespace FTPfromAllControllers
                 try
                 {
                     MOE.Common.Business.Signal signal = new MOE.Common.Business.Signal();
-
-                    //Initialize the signal, because I didn't make a proper constructor
-
                     signal.PrimaryName = row.PrimaryName.ToString();
                     signal.SecondaryName = row.Secondary_Name.ToString();
                     signal.Region = row.Region.ToString();
                     signal.IpAddress = row.IP_Address.ToString();
                     signal.SignalID = row.SignalId.ToString();
-
-
-
                     string Username = row.UserName;
                     string Password = row.Password;
                     string LocalDir = Properties.Settings.Default.HostDir + signal.SignalID + "\\";
                     string RemoteDir = row.FTPDirectory;
                     bool ActiveMode = row.ActiveFTP;
-
 
                     if (!Directory.Exists(LocalDir))
                     {
@@ -107,16 +90,6 @@ namespace FTPfromAllControllers
                     {
                         try
                         {
-                            //var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                            //var token = tokenSource.Token;
-
-                            //Task task = Task.Factory.StartNew(() => MOE.Common.Business.Signal.GetCurrentRecords(signal.IpAddress, signal.SignalID, Username, Password, LocalDir, RemoteDir, DeleteAfterFTP,
-                            //    SNMPRetry, SNMPTimeout, SNMPPort, ImportAfterFTP, ActiveMode, 0, Options, Properties.Settings.Default.FTPTimeout, token), token);
-
-                            //task.Wait();
-
-                            //if (token.IsCancellationRequested)
-                            //    token.ThrowIfCancellationRequested();
 
                             MOE.Common.Business.Signal.GetCurrentRecords(signal.IpAddress, signal.SignalID, Username, Password, LocalDir, RemoteDir, DeleteAfterFTP,
                                 SNMPRetry, SNMPTimeout, SNMPPort, ImportAfterFTP, ActiveMode, 0, Options, Properties.Settings.Default.FTPTimeout);
@@ -126,14 +99,8 @@ namespace FTPfromAllControllers
                         {
                             Console.WriteLine("Error At Highest Level for signal " + ex.Message);
                             ErrorRepository.QuickAdd("FTPFromAllControllers", "Main", "Main Loop", MOE.Common.Models.ApplicationEvent.SeverityLevels.Medium, "Error At Highest Level for signal " + row.SignalId);
-
                         }
-
-
                     }
-
-
-
                 }
                 catch (AggregateException ex)
                 {
@@ -144,38 +111,14 @@ namespace FTPfromAllControllers
             }
 
     );
-    
-        
-            
 
-
-                    //if (Properties.Settings.Default.DealWithMoab)
-                    //{
-                    //    try
-                    //    {
-                    //        DealWithMoab(Options);
-                    //    }
-                    //    catch
-                    //    {
-
-                    //    }
-                    //}
-
-
-            
-   
-            }
+        }
 
         public static bool CheckIfIPAddressIsValid(MOE.Common.Business.Signal signal)
         {
             bool hasValidIP = false;
-
             IPAddress ip;
-
             hasValidIP = IPAddress.TryParse(signal.IpAddress, out ip);
-
-
-
             if (signal.IpAddress == "0")
             {
                 hasValidIP = false;
@@ -247,9 +190,4 @@ namespace FTPfromAllControllers
 
         }
     }
-
-
-
 }
-
-
