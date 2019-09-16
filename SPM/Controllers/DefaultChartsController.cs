@@ -127,10 +127,16 @@ namespace SPM.Controllers
                 case 17:
                     TimingAndActuationsOptions timingAndActuationsOptions = new TimingAndActuationsOptions();
                     return PartialView("TimingAndActuationsOptions", timingAndActuationsOptions);
-                case 12: default:
+                case 12: 
                     SplitFailOptions splitFailOptions = new SplitFailOptions();
                     splitFailOptions.SetDefaults();
                     return PartialView("SplitFailOptions", splitFailOptions);
+                case 31:
+                    return PartialView("ResidualQueueOptions", new ResidualQueueOptions());
+                case 32:
+                    return PartialView("FlowRatesOptions", new FlowRatesOptions());
+                default:
+                    return PartialView();
             }
         }
 
@@ -912,6 +918,76 @@ namespace SPM.Controllers
             sb.Append("&SelectedLineSize=" + metricOptions.SelectedLineSize.ToString().ToLower());
             sb.Append("&ShowPlanStatistics=" + metricOptions.ShowPlanStatistics.ToString().ToLower());
             sb.Append("&ShowVolumes=" + metricOptions.ShowVolumes.ToString().ToLower());
+            sb.Append("&SignalID=" + metricOptions.SignalID);
+            string _startDate = metricOptions.StartDate.ToString().Trim();
+            _startDate = _startDate.Replace(" ", "%20");
+            string _endDate = metricOptions.EndDate.ToString().Trim();
+            _endDate = _endDate.Replace(" ", "%20");
+            sb.Append("&StartDate=" + _startDate);
+            sb.Append("&EndDate=" + _endDate);
+            string fullUri = Request.Url.AbsoluteUri;
+            int placeCounter = fullUri.IndexOf("/DefaultCharts/");
+            string hostname = fullUri.Substring(0, placeCounter);
+            result.ShowMetricUrlJavascript = "window.history.pushState(\"none\", \"none\", \"" + hostname.Trim() + sb + "\");";
+            return PartialView("MetricResult", result);
+        }
+
+        public ActionResult GetResidualQueue(ResidualQueueOptions metricOptions)
+        {
+            metricOptions.MetricType = GetMetricType(metricOptions.MetricTypeID);
+            Models.MetricResultViewModel result = new Models.MetricResultViewModel();
+            if (ModelState.IsValid)
+            {
+                MetricGeneratorService.MetricGeneratorClient client = new MetricGeneratorService.MetricGeneratorClient();
+                try
+                {
+                    client.Open();
+                    result.ChartPaths = client.CreateMetric(metricOptions);
+                    client.Close();
+                }
+                catch (Exception ex)
+                {
+                    client.Close();
+                    return Content("<h1>" + ex.Message + "</h1>");
+                }
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.Append("/DefaultCharts/GetPedDelayMetricByUrl?");
+            sb.Append("&SignalID=" + metricOptions.SignalID);
+            string _startDate = metricOptions.StartDate.ToString().Trim();
+            _startDate = _startDate.Replace(" ", "%20");
+            string _endDate = metricOptions.EndDate.ToString().Trim();
+            _endDate = _endDate.Replace(" ", "%20");
+            sb.Append("&StartDate=" + _startDate);
+            sb.Append("&EndDate=" + _endDate);
+            string fullUri = Request.Url.AbsoluteUri;
+            int placeCounter = fullUri.IndexOf("/DefaultCharts/");
+            string hostname = fullUri.Substring(0, placeCounter);
+            result.ShowMetricUrlJavascript = "window.history.pushState(\"none\", \"none\", \"" + hostname.Trim() + sb + "\");";
+            return PartialView("MetricResult", result);
+        }
+
+        public ActionResult GetFlowRates(FlowRatesOptions metricOptions)
+        {
+            metricOptions.MetricType = GetMetricType(metricOptions.MetricTypeID);
+            Models.MetricResultViewModel result = new Models.MetricResultViewModel();
+            if (ModelState.IsValid)
+            {
+                MetricGeneratorService.MetricGeneratorClient client = new MetricGeneratorService.MetricGeneratorClient();
+                try
+                {
+                    client.Open();
+                    result.ChartPaths = client.CreateMetric(metricOptions);
+                    client.Close();
+                }
+                catch (Exception ex)
+                {
+                    client.Close();
+                    return Content("<h1>" + ex.Message + "</h1>");
+                }
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.Append("/DefaultCharts/GetPedDelayMetricByUrl?");
             sb.Append("&SignalID=" + metricOptions.SignalID);
             string _startDate = metricOptions.StartDate.ToString().Trim();
             _startDate = _startDate.Replace(" ", "%20");

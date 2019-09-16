@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -336,6 +336,12 @@
     <Compile Include="Business\ChartOptions\ChartOptions.cs" />
     <Compile Include="Business\ChartTitleFactory.cs" />
     <Compile Include="Business\CycleFactory.cs" />
+    <Compile Include="Business\FlowRatesChart.cs" />
+    <Compile Include="Business\FlowRatesCycle.cs" />
+    <Compile Include="Business\FlowRatesPhase.cs" />
+    <Compile Include="Business\ResidualQueueChart.cs" />
+    <Compile Include="Business\ResidualQueueCycle.cs" />
+    <Compile Include="Business\ResidualQueuePhase.cs" />
     <Compile Include="Business\TimingAndActuationCycle.cs" />
     <Compile Include="Business\Phase.cs">
       <SubType>Code</SubType>
@@ -415,6 +421,8 @@
     <Compile Include="Business\PCD\Plan.cs" />
     <Compile Include="Business\TMC\TMCViewModel.cs" />
     <Compile Include="Business\WatchDog\WatchDogScan.cs" />
+    <Compile Include="Business\WCFServiceLibrary\FlowRatesOptions.cs" />
+    <Compile Include="Business\WCFServiceLibrary\ResidualQueueOptions.cs" />
     <Compile Include="Business\WCFServiceLibrary\TimingAndActuationsOptions.cs" />
     <Compile Include="Business\WCFServiceLibrary\PhaseAggregationMetricOptions.cs" />
     <Compile Include="Business\WCFServiceLibrary\ApproachCycleAggregationOptions.cs" />

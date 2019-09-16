@@ -36,6 +36,8 @@ namespace MOEWcfServiceLibrary
     [ServiceKnownType(typeof(MOE.Common.Business.WCFServiceLibrary.PhaseTerminationAggregationOptions))]
     [ServiceKnownType(typeof(MOE.Common.Business.WCFServiceLibrary.PhasePedAggregationOptions))]
     [ServiceKnownType(typeof(MOE.Common.Business.WCFServiceLibrary.TimingAndActuationsOptions))]
+    [ServiceKnownType(typeof(MOE.Common.Business.WCFServiceLibrary.FlowRatesOptions))]
+    [ServiceKnownType(typeof(MOE.Common.Business.WCFServiceLibrary.ResidualQueueOptions))]
 
 
     public interface IMetricGenerator

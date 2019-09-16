@@ -227,6 +227,18 @@ function GetSplitMonitorMetric(metricTypeID) {
     GetMetric(urlpathSplitMonitor, tosend);
 }
 
+function GetResidualQueueMetric(metricTypeID) {
+    var tosend = GetCommonValues();
+    tosend.MetricTypeID = metricTypeID;
+    GetMetric(urlpathResidualQueue, tosend);
+}
+
+function GetFlowRatesMetric(metricTypeID) {
+    var tosend = GetCommonValues();
+    tosend.MetricTypeID = metricTypeID;
+    GetMetric(urlpathFlowRates, tosend);
+}
+
 $('#CreateMetric').click(function() { CreateMetric(); });
 
 function CreateMetric() {
@@ -273,6 +285,12 @@ function CreateMetric() {
         }
         else if (selectedMetricID == 17) {
             GetTimingAndActuationsMetric(17);
+        }
+        else if (selectedMetricID == 31) {
+            GetResidualQueueMetric(31);
+        }
+        else if (selectedMetricID == 32) {
+            GetFlowRatesMetric(32);
         }
     }
     defer.resolve();

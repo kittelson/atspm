@@ -692,7 +692,9 @@ namespace MOE.Common.Migrations
                 new DetectionType {DetectionTypeID = 4, Description = "Lane-by-lane Count"},
                 new DetectionType {DetectionTypeID = 5, Description = "Lane-by-lane with Speed Restriction"},
                 new DetectionType {DetectionTypeID = 6, Description = "Stop Bar Presence"},
-                new DetectionType { DetectionTypeID = 7, Description = "Advanced Presence" }
+                new DetectionType { DetectionTypeID = 7, Description = "Advanced Presence" },
+                new DetectionType { DetectionTypeID = 8, Description = "Input" },
+                new DetectionType { DetectionTypeID = 9, Description = "Output" }
             );
 
 
@@ -921,6 +923,24 @@ namespace MOE.Common.Migrations
                     Abbreviation = "APD",
                     ShowOnWebsite = false,
                     ShowOnAggregationSite = true
+                },
+
+                new MetricType
+                {
+                    MetricID = 31,
+                    ChartName = "Residual Queue",
+                    Abbreviation = "RQ",
+                    ShowOnWebsite = true,
+                    ShowOnAggregationSite = false
+                },
+
+                new MetricType
+                {
+                    MetricID = 32,
+                    ChartName = "Flow Rates",
+                    Abbreviation = "FR",
+                    ShowOnWebsite = true,
+                    ShowOnAggregationSite = false
                 }
             );
             context.SaveChanges();
@@ -956,6 +976,13 @@ namespace MOE.Common.Migrations
                         break;
                     case 6:
                         detectionType.MetricTypes.Add(context.MetricTypes.Find(12));
+                        break;
+                    case 8:
+                        detectionType.MetricTypes.Add(context.MetricTypes.Find(31));
+                        detectionType.MetricTypes.Add(context.MetricTypes.Find(32));
+                        break;
+                    case 9:
+                        detectionType.MetricTypes.Add(context.MetricTypes.Find(32));
                         break;
                 }
             context.SaveChanges();

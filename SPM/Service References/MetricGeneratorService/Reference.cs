@@ -46,6 +46,8 @@ namespace SPM.MetricGeneratorService {
         [System.ServiceModel.ServiceKnownTypeAttribute(typeof(MOE.Common.Business.WCFServiceLibrary.PhaseAggregationMetricOptions))]
         [System.ServiceModel.ServiceKnownTypeAttribute(typeof(MOE.Common.Business.WCFServiceLibrary.PhaseTerminationAggregationOptions))]
         [System.ServiceModel.ServiceKnownTypeAttribute(typeof(MOE.Common.Business.WCFServiceLibrary.PhasePedAggregationOptions))]
+        [System.ServiceModel.ServiceKnownTypeAttribute(typeof(MOE.Common.Business.WCFServiceLibrary.FlowRatesOptions))]
+        [System.ServiceModel.ServiceKnownTypeAttribute(typeof(MOE.Common.Business.WCFServiceLibrary.ResidualQueueOptions))]
         string[] CreateMetric(MOE.Common.Business.WCFServiceLibrary.MetricOptions options);
         
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IMetricGenerator/CreateMetric", ReplyAction="http://tempuri.org/IMetricGenerator/CreateMetricResponse")]
