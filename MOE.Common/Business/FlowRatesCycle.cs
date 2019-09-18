@@ -17,28 +17,28 @@ namespace MOE.Common.Business
             DateTime lastRedEvent) : base(firstRedEvent, greenEvent, yellowEvent, lastRedEvent)
         {
         }
-       
+
         public int OutputDetectionCount { get; set; }
+        public List<FlowRatesLane> Lanes { get; } = new List<FlowRatesLane>();
         public List<Controller_Event_Log> OutputDetectorEvents { get; set; }
         public TerminationType TerminationEvent { get; }
-        public double PhaseFlowRate { get { return OutputDetectionCount / Math.Abs(TotalGreenTime) * 3600; } }
-        public double SaturationFlowRate { get { return GetSaturationFlowRate(); } }
+        public double CyclePhaseFlowRate { get { return OutputDetectionCount / Math.Abs(TotalGreenTime) * 3600; } }
+        public double CycleSaturationFlowRate { get { return GetSaturationFlowRate(); } }
 
         private double GetSaturationFlowRate()
         {
-            if (OutputDetectionCount < 10)
-                return 0;
-            var outputOnEvents = OutputDetectorEvents.Where(e => e.EventCode == 82).OrderBy(e => e.Timestamp).ToList();
-            var start5th = outputOnEvents[4].Timestamp;
-            var start10th = outputOnEvents[9].Timestamp;
-            var flowRate = (5 / (start10th - start5th).TotalSeconds) * 3600;
-            return flowRate;
+            return Lanes.Sum(l=>l.SaturationFlowRate) / Lanes.Where(l=>l.Saturation).Count();
         }
 
         public void SetDetections(List<Controller_Event_Log> eventsOut)
         {
-            OutputDetectorEvents = eventsOut.Where(e => e.Timestamp > StartTime && e.Timestamp < EndTime).ToList();
+            OutputDetectorEvents = eventsOut.Where(e => e.Timestamp > GreenEvent && e.Timestamp < EndTime).ToList();
             OutputDetectionCount = OutputDetectorEvents.Where(e => e.EventCode == 82).ToList().Count;
+            var detectors = OutputDetectorEvents.GroupBy(e => e.EventParam);
+            foreach (var d in detectors)
+            {
+                Lanes.Add(new FlowRatesLane(d.ToList()));
+            }
         }
     }
 }

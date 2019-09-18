@@ -448,6 +448,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>MOE.xsd</DependentUpon>
     </Compile>
+    <Compile Include="FlowRatesLane.cs" />
     <Compile Include="Migrations\201611101941171_Version4.0.cs" />
     <Compile Include="Migrations\201611101941171_Version4.0.Designer.cs">
       <DependentUpon>201611101941171_Version4.0.cs</DependentUpon>

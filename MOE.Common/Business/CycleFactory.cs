@@ -262,7 +262,6 @@ namespace MOE.Common.Business
                         cycleEvents[i + 3].Timestamp, terminationEvents);
                     cycles.Add(new FlowRatesCycle(cycleEvents[i].Timestamp, cycleEvents[i + 1].Timestamp,
                         cycleEvents[i + 2].Timestamp, cycleEvents[i + 3].Timestamp));
-                    //i = i + 2;
                 }
             return cycles;
         }
@@ -277,16 +276,15 @@ namespace MOE.Common.Business
                 GetTerminationEvents(false, options.StartDate, options.EndDate, approach);
             var cycles = new List<ResidualQueueCycle>();
             for (var i = 0; i < cycleEvents.Count - 3; i++)
-                if (GetEventType(cycleEvents[i].EventCode) == RedToRedCycle.EventType.ChangeToGreen
-                    && GetEventType(cycleEvents[i + 1].EventCode) == RedToRedCycle.EventType.ChangeToYellow
-                    && GetEventType(cycleEvents[i + 2].EventCode) == RedToRedCycle.EventType.ChangeToRed
-                    && (GetEventType(cycleEvents[i + 3].EventCode) == RedToRedCycle.EventType.ChangeToGreen || cycleEvents[i + 3].EventCode == 66))
+                if (GetEventType(cycleEvents[i].EventCode) == RedToRedCycle.EventType.ChangeToRed
+                        && GetEventType(cycleEvents[i + 1].EventCode) == RedToRedCycle.EventType.ChangeToGreen
+                        && GetEventType(cycleEvents[i + 2].EventCode) == RedToRedCycle.EventType.ChangeToYellow
+                        && GetEventType(cycleEvents[i + 3].EventCode) == RedToRedCycle.EventType.ChangeToRed || cycleEvents[i + 3].EventCode == 66)
                 {
                     var termEvent = GetTerminationEventBetweenStartAndEnd(cycleEvents[i].Timestamp,
                         cycleEvents[i + 3].Timestamp, terminationEvents);
-                    cycles.Add(new ResidualQueueCycle(cycleEvents[i].Timestamp, cycleEvents[i + 2].Timestamp,
-                        cycleEvents[i + 1].Timestamp, cycleEvents[i + 3].Timestamp));
-                    //i = i + 2;
+                    cycles.Add(new ResidualQueueCycle(cycleEvents[i].Timestamp, cycleEvents[i + 1].Timestamp,
+                        cycleEvents[i + 2].Timestamp, cycleEvents[i + 3].Timestamp));
                 }
             return cycles;
         }

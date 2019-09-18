@@ -20,7 +20,7 @@ namespace MOE.Common.Business
         {
             Options = options;
             FlowRatesPhase = phase;
-            options.YAxisMax = Math.Round(FlowRatesPhase.Cycles.Max(p => p.SaturationFlowRate));
+            options.YAxisMax = Math.Round(Math.Max(FlowRatesPhase.Cycles.Max(p => p.CycleSaturationFlowRate), FlowRatesPhase.Cycles.Max(p => p.CyclePhaseFlowRate)));
             Chart = ChartFactory.CreateDefaultChartNoX2AxisNoY2Axis(options);
             Chart.ChartAreas.First().AxisY.Title = "Flow Rate (vehicles per hour)";
             Chart.ChartAreas.First().AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
@@ -31,53 +31,61 @@ namespace MOE.Common.Business
             chartLegend.Name = "MainLegend";
             chartLegend.Docking = Docking.Left;
             Chart.Legends.Add(chartLegend);
-            AddSeries(Chart);
+            AddSeries(Chart, phase);
             AddDataToChart(Chart);
             Chart.ChartAreas.First().RecalculateAxesScale();
+            SetChartTitles(phase, phase.Statistics);
         }
 
-        private void SetChartTitles(SignalPhase signalPhase, Dictionary<string, string> statistics)
+        private void SetChartTitles(FlowRatesPhase signalPhase, Dictionary<string, string> statistics)
         {
             Chart.Titles.Add(ChartTitleFactory.GetChartName(Options.MetricTypeID));
             Chart.Titles.Add(ChartTitleFactory.GetSignalLocationAndDateRange(
                 Options.SignalID, Options.StartDate, Options.EndDate));
             Chart.Titles.Add(ChartTitleFactory.GetPhaseAndPhaseDescriptions(
-                signalPhase.Approach, signalPhase.GetPermissivePhase));
+                signalPhase.Approach, false));
             Chart.Titles.Add(ChartTitleFactory.GetStatistics(statistics));
             Chart.Titles.Add(ChartTitleFactory.GetTitle(
-                "Simplified Approach Delay. Displays time between approach activation during the red phase and when the phase turns green."
-                + " \n Does NOT account for start up delay, deceleration, or queue length that exceeds the detection zone."));
+                "Flow Rates Per Lane by Cycle per Phase."));
             Chart.Titles.LastOrDefault().Docking = Docking.Bottom;
         }
-        private void AddSeries(Chart chart)
+        private void AddSeries(Chart chart, FlowRatesPhase phase)
         {
-            var phaseFlowRates = new Series();
-            phaseFlowRates.ChartType = SeriesChartType.Line;
-            phaseFlowRates.BorderDashStyle = ChartDashStyle.Solid;
-            phaseFlowRates.BorderWidth = 2;
-            phaseFlowRates.Color = Color.DarkGreen;
-            phaseFlowRates.Name = "Phase Flow Rate";
-            phaseFlowRates.XValueType = ChartValueType.DateTime;
+            foreach (var lane in phase.Detectors)
+            {
+                var phaseFlowRates = new Series();
+                phaseFlowRates.ChartType = SeriesChartType.Line;
+                phaseFlowRates.BorderDashStyle = ChartDashStyle.Solid;
+                phaseFlowRates.BorderWidth = 2;
+                //phaseFlowRates.Color = Color.DarkGreen;
+                phaseFlowRates.Name = String.Format("Phase Flow Rate - Ch{0}", lane.DetChannel);
+                phaseFlowRates.XValueType = ChartValueType.DateTime;
 
-            var satFlowRates = new Series();
-            satFlowRates.ChartType = SeriesChartType.Line;
-            satFlowRates.BorderDashStyle = ChartDashStyle.Solid;
-            satFlowRates.BorderWidth = 2;
-            satFlowRates.Color = Color.DarkRed;
-            satFlowRates.Name = "Saturation Flow Rate";
-            satFlowRates.XValueType = ChartValueType.DateTime;
+                var satFlowRates = new Series();
+                satFlowRates.ChartType = SeriesChartType.Line;
+                satFlowRates.BorderDashStyle = ChartDashStyle.Solid;
+                satFlowRates.BorderWidth = 2;
+                //satFlowRates.Color = Color.DarkRed;
+                satFlowRates.Name = String.Format("Saturation Flow Rate - Ch{0}", lane.DetChannel);
+                satFlowRates.XValueType = ChartValueType.DateTime;
 
-            chart.Series.Add(phaseFlowRates);
-            chart.Series.Add(satFlowRates);
-
+                chart.Series.Add(phaseFlowRates);
+                chart.Series.Add(satFlowRates);
+            }
         }
         protected void AddDataToChart(Chart chart)
         {
             foreach (var cycle in FlowRatesPhase.Cycles)
             {
-                chart.Series["Phase Flow Rate"].Points.AddXY(cycle.StartTime, cycle.PhaseFlowRate);
-                if (cycle.SaturationFlowRate > 0)
-                    chart.Series["Saturation Flow Rate"].Points.AddXY(cycle.StartTime, cycle.SaturationFlowRate);   
+                foreach (var lane in cycle.Lanes)
+                {
+                    if (lane.Detections.Count > 0)
+                    {
+                        chart.Series[String.Format("Phase Flow Rate - Ch{0}", lane.DetectorChannel)].Points.AddXY(cycle.StartTime, lane.Detections.Count / cycle.TotalGreenTime * 3600);
+                        if (lane.SaturationFlowRate > 0)
+                            chart.Series[String.Format("Saturation Flow Rate - Ch{0}", lane.DetectorChannel)].Points.AddXY(cycle.StartTime, lane.SaturationFlowRate);
+                    }
+                }
             }
         }
     }
