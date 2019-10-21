@@ -51,8 +51,9 @@ namespace MOE.Common.Business
         {
             Statistics.Add("Total Cycles", Cycles.Count().ToString());
             Statistics.Add("Total Saturated Cycles", Cycles.Where(c => c.Lanes.Where(l => l.Saturation).Count() > 0).Count().ToString());
-            Statistics.Add("Average Phase Flow Rate", System.Math.Round(Cycles.Average(c => c.CyclePhaseFlowRate)).ToString());
-            Statistics.Add("Average Saturation Flow Rate", System.Math.Round(Cycles.Where(c=>c.CycleSaturationFlowRate > 0).Average(c => c.CycleSaturationFlowRate)).ToString());
+            Statistics.Add("Average Phase Flow Rate", System.Math.Round(Cycles.Count > 0 ? Cycles.Average(c => c.CyclePhaseFlowRate) : 0).ToString());
+            var saturatedCycles = Cycles.Where(c => c.CycleSaturationFlowRate > 0);
+            Statistics.Add("Average Saturation Flow Rate", System.Math.Round(saturatedCycles.Count() > 0 ? saturatedCycles.Average(c => c.CycleSaturationFlowRate) : 0).ToString());
         }
     }
 }

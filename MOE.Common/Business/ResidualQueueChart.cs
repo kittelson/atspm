@@ -20,10 +20,9 @@ namespace MOE.Common.Business
         {
             Options = options;
             ResidualQueuePhase = phase;
-            options.YAxisMax = ResidualQueuePhase.Cycles.Max(p => p.ResidualQueue);
+            options.YAxisMax = ((ResidualQueuePhase.Cycles.Max(p => p.TotalQueue) / 5) +1) * 5;
             options.Y2AxisMax = options.YAxisMax;
             options.Y2AxisTitle = "Residual Queue";
-            // options.YAxisMin = ResidualQueuePhase.Cycles.Min(p => p.ResidualQueue);
             Chart = ChartFactory.CreateDefaultChartNoX2AxisNoY2Axis(options);
             Chart.ChartAreas.First().AxisY.Title = "Residual Queue";
             ChartFactory.SetImageProperties(Chart);
@@ -69,7 +68,7 @@ namespace MOE.Common.Business
         {
             foreach (var cycle in ResidualQueuePhase.Cycles)
             {
-                chart.Series["Residual Queue"].Points.AddXY(cycle.StartTime, cycle.ResidualQueue);
+                chart.Series["Residual Queue"].Points.AddXY(cycle.StartTime, cycle.TotalQueue);
             }
         }
     }

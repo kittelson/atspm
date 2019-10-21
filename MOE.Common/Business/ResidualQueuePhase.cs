@@ -29,8 +29,20 @@ namespace MOE.Common.Business
 
         private void AddDetectorActivationsToCycles()
         {
-            foreach (var cycle in Cycles)
+            for (int i = 0; i < Cycles.Count; i++)
+            {
+                var cycle = Cycles[i];
                 cycle.SetDetections(_inputDetectorActivations, _outputDetectorActivations);
+                if (i == 0)
+                    cycle.TotalQueue = cycle.ResidualQueue;
+                else
+                {
+                    cycle.TotalQueue = cycle.ResidualQueue + Cycles[i-1].ResidualQueue;
+                    if (cycle.ResidualQueue == 0 && Cycles[i-1].ResidualQueue == 0)
+                        cycle.TotalQueue = 0;
+                }
+            }
+                
         }
 
         private void SetDetectorActivations(ResidualQueueOptions options)

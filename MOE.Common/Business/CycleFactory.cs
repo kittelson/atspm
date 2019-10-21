@@ -286,7 +286,7 @@ namespace MOE.Common.Business
                     cycles.Add(new ResidualQueueCycle(cycleEvents[i].Timestamp, cycleEvents[i + 1].Timestamp,
                         cycleEvents[i + 2].Timestamp, cycleEvents[i + 3].Timestamp));
                 }
-            return cycles;
+            return cycles.OrderBy(c=>c.StartTime).ToList();
         }
 
         public static List<CycleSplitFail> GetSplitFailCycles(SplitFailOptions options, Approach approach,
