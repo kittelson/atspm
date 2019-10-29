@@ -22,12 +22,17 @@ namespace MOE.Common.Business
         public List<FlowRatesLane> Lanes { get; } = new List<FlowRatesLane>();
         public List<Controller_Event_Log> OutputDetectorEvents { get; set; }
         public TerminationType TerminationEvent { get; }
-        public double CyclePhaseFlowRate { get { return OutputDetectionCount / Math.Abs(TotalGreenTime) * 3600; } }
+        public double CyclePhaseFlowRate { get { return GetPhaseFlowRate(); } }
         public double CycleSaturationFlowRate { get { return GetSaturationFlowRate(); } }
 
         private double GetSaturationFlowRate()
         {
             return Lanes.Sum(l=>l.SaturationFlowRate) / Lanes.Where(l=>l.Saturation).Count();
+        }
+
+        private double GetPhaseFlowRate()
+        {
+            return Lanes.Sum(l => l.PhaseFlowRate) / Lanes.Count();
         }
 
         public void SetDetections(List<Controller_Event_Log> eventsOut)
@@ -37,7 +42,7 @@ namespace MOE.Common.Business
             var detectors = OutputDetectorEvents.GroupBy(e => e.EventParam);
             foreach (var d in detectors)
             {
-                Lanes.Add(new FlowRatesLane(d.ToList()));
+                Lanes.Add(new FlowRatesLane(d.ToList(), TotalGreenTime));
             }
         }
     }

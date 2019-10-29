@@ -16,11 +16,30 @@ namespace MOE.Common.Business
         public WCFServiceLibrary.FlowRatesOptions Options;
         public FlowRatesPhase FlowRatesPhase;
 
+        private List<Color> Palette = new List<Color> {
+            Color.Aqua,
+            Color.ForestGreen,
+            Color.Firebrick,
+            Color.Navy,
+            Color.Orange,
+            Color.PaleGreen,
+            Color.Tomato,
+            Color.SlateGray,
+            Color.PeachPuff,
+            Color.Lavender,
+            Color.Ivory,
+            Color.HotPink,
+            Color.Brown,
+            Color.Crimson,
+            Color.LimeGreen,
+            Color.OliveDrab
+        };
+
         public FlowRatesChart(WCFServiceLibrary.FlowRatesOptions options, FlowRatesPhase phase )
         {
             Options = options;
             FlowRatesPhase = phase;
-            options.YAxisMax = Math.Round(Math.Max(FlowRatesPhase.Cycles.Max(p => p.CycleSaturationFlowRate), FlowRatesPhase.Cycles.Max(p => p.CyclePhaseFlowRate)));
+            options.YAxisMax = (((int)Math.Max(FlowRatesPhase.Cycles.Max(p => p.CycleSaturationFlowRate), FlowRatesPhase.Cycles.Max(p => p.CyclePhaseFlowRate))/250) +1)*250 + 250;
             Chart = ChartFactory.CreateDefaultChartNoX2AxisNoY2Axis(options);
             Chart.ChartAreas.First().AxisY.Title = "Flow Rate (vehicles per hour)";
             Chart.ChartAreas.First().AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
@@ -55,9 +74,9 @@ namespace MOE.Common.Business
             {
                 var phaseFlowRates = new Series();
                 phaseFlowRates.ChartType = SeriesChartType.Line;
-                phaseFlowRates.BorderDashStyle = ChartDashStyle.Solid;
+                phaseFlowRates.BorderDashStyle = ChartDashStyle.Dash;
                 phaseFlowRates.BorderWidth = 2;
-                //phaseFlowRates.Color = Color.DarkGreen;
+                phaseFlowRates.Color = Palette[lane.DetChannel % 16];
                 phaseFlowRates.Name = String.Format("Phase Flow Rate - Ch{0}", lane.DetChannel);
                 phaseFlowRates.XValueType = ChartValueType.DateTime;
 
@@ -65,7 +84,7 @@ namespace MOE.Common.Business
                 satFlowRates.ChartType = SeriesChartType.Line;
                 satFlowRates.BorderDashStyle = ChartDashStyle.Solid;
                 satFlowRates.BorderWidth = 2;
-                //satFlowRates.Color = Color.DarkRed;
+                satFlowRates.Color = Palette[lane.DetChannel % 16];
                 satFlowRates.Name = String.Format("Saturation Flow Rate - Ch{0}", lane.DetChannel);
                 satFlowRates.XValueType = ChartValueType.DateTime;
 
@@ -81,7 +100,7 @@ namespace MOE.Common.Business
                 {
                     if (lane.Detections.Count > 0)
                     {
-                        chart.Series[String.Format("Phase Flow Rate - Ch{0}", lane.DetectorChannel)].Points.AddXY(cycle.StartTime, lane.Detections.Count / cycle.TotalGreenTime * 3600);
+                        chart.Series[String.Format("Phase Flow Rate - Ch{0}", lane.DetectorChannel)].Points.AddXY(cycle.StartTime, lane.PhaseFlowRate);
                         if (lane.SaturationFlowRate > 0)
                             chart.Series[String.Format("Saturation Flow Rate - Ch{0}", lane.DetectorChannel)].Points.AddXY(cycle.StartTime, lane.SaturationFlowRate);
                     }

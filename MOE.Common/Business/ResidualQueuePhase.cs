@@ -24,27 +24,9 @@ namespace MOE.Common.Business
             Cycles = CycleFactory.GetResidualQueueCycles(options, approach);
             SetDetectorActivations(options);
             AddDetectorActivationsToCycles();
+            SetCycleResidualQueues();
            // Plans = PlanFactory.GetSplitFailPlans(Cycles, options, Approach);
         }
-
-        private void AddDetectorActivationsToCycles()
-        {
-            for (int i = 0; i < Cycles.Count; i++)
-            {
-                var cycle = Cycles[i];
-                cycle.SetDetections(_inputDetectorActivations, _outputDetectorActivations);
-                if (i == 0)
-                    cycle.TotalQueue = cycle.ResidualQueue;
-                else
-                {
-                    cycle.TotalQueue = cycle.ResidualQueue + Cycles[i-1].ResidualQueue;
-                    if (cycle.ResidualQueue == 0 && Cycles[i-1].ResidualQueue == 0)
-                        cycle.TotalQueue = 0;
-                }
-            }
-                
-        }
-
         private void SetDetectorActivations(ResidualQueueOptions options)
         {
             var controllerEventsRepository = ControllerEventLogRepositoryFactory.Create();
@@ -63,6 +45,25 @@ namespace MOE.Common.Business
                 List<Controller_Event_Log> events = controllerEventsRepository.GetEventsByEventCodesParamWithLatencyCorrection(Approach.SignalID,
                     options.StartDate, options.EndDate, new List<int> { 81 }, detector.DetChannel, detector.LatencyCorrection);
                 _outputDetectorActivations.AddRange(events);
+            }
+        }
+
+        private void AddDetectorActivationsToCycles()
+        {
+            foreach (var cycle in Cycles)
+                cycle.SetDetections(_inputDetectorActivations, _outputDetectorActivations);                           
+        }
+
+        private void SetCycleResidualQueues()
+        {
+            for (int i = 0; i < Cycles.Count; i++)
+            {
+                if (i == 0)
+                    Cycles[i].TotalQueue = Cycles[i].ResidualQueue;
+                else
+                {
+                    Cycles[i].TotalQueue = Cycles[i].ResidualQueue + Cycles[i - 1].TotalQueue;
+                }
             }
         }
     }

@@ -11,13 +11,14 @@ namespace MOE.Common
     public class FlowRatesLane
     {
         public bool Saturation { get; } = false;
-       //public double PhaseFlowRate
-       //{
-       //    get
-       //    {
-       //        return 0;
-       //    }
-       //}
+       
+        public double PhaseFlowRate
+        {
+            get
+            {
+               return 3600 / (TotalGreenTime / Detections.Count());
+            }
+        }
         public double SaturationFlowRate {
             get
             {
@@ -31,10 +32,12 @@ namespace MOE.Common
         }
         public int DetectorChannel { get; }
         public List<Controller_Event_Log> Detections = new List<Controller_Event_Log>();
+        public double TotalGreenTime { get; }
 
-        public FlowRatesLane(List<Controller_Event_Log> events)
+        public FlowRatesLane(List<Controller_Event_Log> events, double totalGreenTime)
         {
             events = events.Where(e => e.EventCode == 82).OrderBy(e => e.Timestamp).ToList();
+            TotalGreenTime = totalGreenTime;
             if (events.Any())
             {
                 DetectorChannel = events.First().EventParam;
