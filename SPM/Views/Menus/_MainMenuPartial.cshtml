@@ -29,21 +29,16 @@
                 <li nav-item dropdown>
                     <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true">@m.MenuObject.MenuName </a>
                     <div class="dropdown-menu">
-
+                        @foreach (var s in m.SubMenuItems)
+                        {
+                            @RenderMenuItems(s)
+                        }
                         @if (m.MenuObject.MenuName == "Links")
                         {
-                            <div class="dropdown-submenu">
-                                @foreach (MOE.Common.Models.ExternalLink e in m.ExternalLinks.OrderBy(x => x.DisplayOrder).ToList())
-                                {
-                                    <a href="@e.Url" class="dropdown-item">@e.Name</a>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            foreach (var s in m.SubMenuItems)
+                            foreach (MOE.Common.Models.ExternalLink e in m.ExternalLinks.OrderBy(x => x.DisplayOrder).ToList())
                             {
-                                @RenderMenuItems(s)
+
+                                <a href="@e.Url" class="dropdown-item">@e.Name</a>
                             }
                         }
                     </div>
