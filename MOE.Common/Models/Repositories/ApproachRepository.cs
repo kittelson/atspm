@@ -196,6 +196,11 @@ namespace MOE.Common.Models.Repositories
             return _db.Approaches.Where(a => excludedApproachIds.Contains(a.ApproachID)).ToList();
         }
 
+        public Approach GetApproachBySignalPhase(int PhaseId, string SignalId)
+        {
+            return _db.Approaches.Include("DirectionType").Where(a => a.ProtectedPhaseNumber == PhaseId && a.SignalID == SignalId).First();
+        }
+
         public Approach Add(Approach approach)
         {
             var g = (from r in _db.Approaches

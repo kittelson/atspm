@@ -335,13 +335,14 @@
     <Compile Include="Business\ChartFactory.cs" />
     <Compile Include="Business\ChartOptions\ChartOptions.cs" />
     <Compile Include="Business\ChartTitleFactory.cs" />
+    <Compile Include="Business\ConcurrencyGroupFactory.cs" />
     <Compile Include="Business\CycleFactory.cs" />
     <Compile Include="Business\FlowRatesChart.cs" />
     <Compile Include="Business\FlowRatesCycle.cs" />
     <Compile Include="Business\FlowRatesPhase.cs" />
     <Compile Include="Business\ResidualQueueChart.cs" />
-    <Compile Include="Business\ResidualQueueCycle.cs" />
-    <Compile Include="Business\ResidualQueuePhase.cs" />
+    <Compile Include="Business\ResidualQueueConcurrencyGroup.cs" />
+    <Compile Include="Business\ResidualQueueDirection.cs" />
     <Compile Include="Business\TimingAndActuationCycle.cs" />
     <Compile Include="Business\Phase.cs">
       <SubType>Code</SubType>

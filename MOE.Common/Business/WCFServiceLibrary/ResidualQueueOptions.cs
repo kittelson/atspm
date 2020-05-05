@@ -36,32 +36,46 @@ namespace MOE.Common.Business.WCFServiceLibrary
             base.CreateMetric();
             //EndDate = EndDate.AddSeconds(59);
             var returnString = new List<string>();
+
             var sr = SignalsRepositoryFactory.Create();
             var signal = sr.GetVersionOfSignalByDate(SignalID, StartDate);
-            var metricApproaches = signal.GetApproachesForSignalThatSupportMetric(MetricTypeID);
-            if (metricApproaches.Count > 0)
-            {
-                List<ResidualQueuePhase> Phases = new List<ResidualQueuePhase>();
-                foreach (Approach approach in metricApproaches)
-                {
-                    Phases.Add(new ResidualQueuePhase(approach, this, false));
-                }
+            //var metricApproaches = signal.GetApproachesForSignalThatSupportMetric(MetricTypeID);
+            //if (metricApproaches.Count > 0)
+            //{
+            //    List<ResidualQueueApproach> approaches = new List<ResidualQueueApproach>();
+            //    foreach (Approach approach in metricApproaches)
+            //    {
+            //        approaches.Add(new ResidualQueueApproach(approach, this, false));
+            //    }
+            //
+            //    approaches = approaches.OrderBy(s => s.PhaseNumberSort).ToList();
+            //    foreach (var approach in approaches)
+            //    {
+            //        GetChart(approach, returnString);
+            //    }
+            //}
 
-                Phases = Phases.OrderBy(s => s.PhaseNumberSort).ToList();
-                foreach (var phase in Phases)
-                {
-                    GetChart(phase, returnString);
-                }
+            List<ResidualQueueDirection> Directions = new List<ResidualQueueDirection>();
+            var residualQueueConcurrencyGroups = ConcurrencyGroupFactory.GetResidualQueueConcurrencyGroups(signal.SignalID, StartDate.Date, EndDate);
+
+            foreach (var d in residualQueueConcurrencyGroups.GroupBy(g=>g.Direction).Select(g=>g.First().Direction).ToList())
+            {
+                Directions.Add(new ResidualQueueDirection(d, this, residualQueueConcurrencyGroups.Where(g => g.Direction == d && g.StartTime >= StartDate).ToList()));
+            }
+
+            foreach (var direction in Directions)
+            {
+                GetChart(direction, returnString);
             }
             return returnString;
         }
 
-        private void GetChart(ResidualQueuePhase ResidualQueuePhase, List<string> returnString)
+        private void GetChart(ResidualQueueDirection ResidualQueueDirection, List<string> returnString)
         {
-            var ResidualQueueChart = new ResidualQueueChart(this, ResidualQueuePhase);
+            var ResidualQueueChart = new ResidualQueueChart(this, ResidualQueueDirection.Groups);
 
             string chartName = CreateFileName();
-            chartName = chartName.Replace(".", ResidualQueuePhase.Approach.DirectionType.Description + ".");
+            chartName = chartName.Replace(".", ResidualQueueDirection.Direction + ".");
             try
             {
                 ResidualQueueChart.Chart.SaveImage(MetricFileLocation + chartName, ChartImageFormat.Jpeg);
@@ -74,8 +88,7 @@ namespace MOE.Common.Business.WCFServiceLibrary
                 }
                 catch
                 {
-                    var appEventRepository =
-                        ApplicationEventRepositoryFactory.Create();
+                    var appEventRepository = ApplicationEventRepositoryFactory.Create();
                     var applicationEvent = new ApplicationEvent();
                     applicationEvent.ApplicationName = "SPM Website";
                     applicationEvent.Description = MetricType.ChartName + ex.Message + " Failed While Saving File";

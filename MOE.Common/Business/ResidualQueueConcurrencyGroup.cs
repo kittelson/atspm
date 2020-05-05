@@ -8,27 +8,32 @@ using static MOE.Common.Business.PhaseCycleBase;
 
 namespace MOE.Common.Business
 {
-    public class ResidualQueueCycle : RedToRedCycle
+    public class ResidualQueueConcurrencyGroup
     {
 
-        public ResidualQueueCycle(DateTime firstGreenEvent, DateTime redEvent, DateTime yellowEvent,
-            DateTime lastGreenEvent) : base(firstGreenEvent, redEvent, yellowEvent, lastGreenEvent)
+        public ResidualQueueConcurrencyGroup(DateTime firstBarrierEvent, DateTime lastBarrierEvent)
         {
+            StartTime = firstBarrierEvent;
+            EndTime = lastBarrierEvent;
         }
-       
+
         public int InputDetectionCount { get; set; }
         public int OutputDetectionCount { get; set; }
         public int ResidualQueue { get { return InputDetectionCount - OutputDetectionCount; } }
         public int TotalQueue { get; set; }
+        public string Direction { get { return Approach.DirectionType.Description; } }
+        public Approach Approach { get; set; }
         public List<Controller_Event_Log> InputDetectorEvents { get; set; }
         public List<Controller_Event_Log> OutputDetectorEvents { get; set; }
-        public TerminationType TerminationEvent { get; }
+        public Controller_Event_Log TerminationEvent { get; set; }
+        public DateTime StartTime { get; }
+        public DateTime EndTime { get; }
 
         public void SetDetections(List<Controller_Event_Log> eventsIn, List<Controller_Event_Log> eventsOut)
         {
-            InputDetectorEvents = eventsIn.Where(e => e.Timestamp > StartTime && e.Timestamp < EndTime).ToList();
+            InputDetectorEvents = eventsIn.Where(e => e.Timestamp >= StartTime && e.Timestamp <= EndTime).ToList();
             InputDetectionCount = InputDetectorEvents.Count;
-            OutputDetectorEvents = eventsOut.Where(e => e.Timestamp > StartTime && e.Timestamp < EndTime).ToList();
+            OutputDetectorEvents = eventsOut.Where(e => e.Timestamp >= StartTime && e.Timestamp <= EndTime).ToList();
             OutputDetectionCount = OutputDetectorEvents.Count;
         }
     }

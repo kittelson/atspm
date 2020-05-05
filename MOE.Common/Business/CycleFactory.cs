@@ -266,29 +266,6 @@ namespace MOE.Common.Business
             return cycles;
         }
 
-        public static List<ResidualQueueCycle> GetResidualQueueCycles(ResidualQueueOptions options, Approach approach)
-        {
-            var cycleEvents = GetCycleEvents(false, options.StartDate, options.EndDate, approach);
-            if (cycleEvents != null && cycleEvents.Count > 0 && GetEventType(cycleEvents.LastOrDefault().EventCode) !=
-                RedToRedCycle.EventType.ChangeToGreen)
-                GetEventsToCompleteCycle(false, options.EndDate, approach, cycleEvents);
-            var terminationEvents =
-                GetTerminationEvents(false, options.StartDate, options.EndDate, approach);
-            var cycles = new List<ResidualQueueCycle>();
-            for (var i = 0; i < cycleEvents.Count - 3; i++)
-                if (GetEventType(cycleEvents[i].EventCode) == RedToRedCycle.EventType.ChangeToRed
-                        && GetEventType(cycleEvents[i + 1].EventCode) == RedToRedCycle.EventType.ChangeToGreen
-                        && GetEventType(cycleEvents[i + 2].EventCode) == RedToRedCycle.EventType.ChangeToYellow
-                        && GetEventType(cycleEvents[i + 3].EventCode) == RedToRedCycle.EventType.ChangeToRed || cycleEvents[i + 3].EventCode == 66)
-                {
-                    var termEvent = GetTerminationEventBetweenStartAndEnd(cycleEvents[i].Timestamp,
-                        cycleEvents[i + 3].Timestamp, terminationEvents);
-                    cycles.Add(new ResidualQueueCycle(cycleEvents[i].Timestamp, cycleEvents[i + 1].Timestamp,
-                        cycleEvents[i + 2].Timestamp, cycleEvents[i + 3].Timestamp));
-                }
-            return cycles.OrderBy(c=>c.StartTime).ToList();
-        }
-
         public static List<CycleSplitFail> GetSplitFailCycles(SplitFailOptions options, Approach approach,
             bool getPermissivePhase)
         {

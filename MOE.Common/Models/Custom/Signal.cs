@@ -140,6 +140,19 @@ namespace MOE.Common.Models
             return detectors;
         }
 
+        public List<Detector> GetDetectorsForSignalThatSupportAMetricByApproachDirection(int MetricTypeID,
+            int DirectionTypeID)
+        {
+            var gdr =
+                DetectorRepositoryFactory.Create();
+            var detectors = new List<Detector>();
+            foreach (var d in GetDetectorsForSignal())
+                if (gdr.CheckReportAvialbilityByDetector(d, MetricTypeID) &&
+                    d.Approach.DirectionTypeID == DirectionTypeID)
+                    detectors.Add(d);
+            return detectors;
+        }
+
         public List<Detector> GetDetectorsForSignalThatSupportAMetricByPhaseNumber(int metricTypeId, int phaseNumber)
         {
             var gdr = DetectorRepositoryFactory.Create();
