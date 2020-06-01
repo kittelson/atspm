@@ -19,6 +19,7 @@ namespace MOE.Common.Business
         public ResidualQueueChart(WCFServiceLibrary.ResidualQueueOptions options, List<ResidualQueueConcurrencyGroup> groups)
         {
             Options = options;
+            Options.MetricTypeID = 31;
             Groups = groups;
             Chart = ChartFactory.CreateDefaultChart(Options);
             ChartFactory.SetImageProperties(Chart);

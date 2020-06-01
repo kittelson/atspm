@@ -38,9 +38,10 @@ namespace MOE.Common.Business
         public FlowRatesChart(WCFServiceLibrary.FlowRatesOptions options, FlowRatesPhase phase )
         {
             Options = options;
+            Options.MetricTypeID = 32;
             FlowRatesPhase = phase;
-            options.YAxisMax = (((int)Math.Max(FlowRatesPhase.Cycles.Max(p => p.CycleSaturationFlowRate), FlowRatesPhase.Cycles.Max(p => p.CyclePhaseFlowRate))/250) +1)*250 + 250;
-            Chart = ChartFactory.CreateDefaultChartNoX2AxisNoY2Axis(options);
+            Options.YAxisMax = FlowRatesPhase.Cycles.Count > 0 ? (((int)Math.Max(FlowRatesPhase.Cycles.Max(p => p.CycleSaturationFlowRate), FlowRatesPhase.Cycles.Max(p => p.CyclePhaseFlowRate))/250) +1)*250 + 250 : 0;
+            Chart = ChartFactory.CreateDefaultChartNoX2AxisNoY2Axis(Options);
             Chart.ChartAreas.First().AxisY.Title = "Flow Rate (vehicles per hour)";
             Chart.ChartAreas.First().AxisY.IntervalAutoMode = IntervalAutoMode.VariableCount;
             ChartFactory.SetImageProperties(Chart);

@@ -327,6 +327,24 @@ namespace SPM.Controllers
             return View("Index", defaultChartsViewModel);
         }
 
+        public ActionResult GetResidualQueueByUrl(ResidualQueueOptions metricOptions)
+        {
+            DefaultChartsViewModel defaultChartsViewModel = new DefaultChartsViewModel();
+            defaultChartsViewModel.RunMetricJavascript = GetCommonJavascriptProperties(metricOptions);
+            defaultChartsViewModel.RunMetricJavascript += "GetMetricsList('" + metricOptions.SignalID + "', 31); " +
+                                                          "CreateMetric();";
+            return View("Index", defaultChartsViewModel);
+        }
+
+        public ActionResult GetFlowRatesByUrl(FlowRatesOptions metricOptions)
+        {
+            DefaultChartsViewModel defaultChartsViewModel = new DefaultChartsViewModel();
+            defaultChartsViewModel.RunMetricJavascript = GetCommonJavascriptProperties(metricOptions);
+            defaultChartsViewModel.RunMetricJavascript += "GetMetricsList('" + metricOptions.SignalID + "', 32); " +
+                                                          "CreateMetric();";
+            return View("Index", defaultChartsViewModel);
+        }
+
         private string GetCommonJavascriptProperties(MetricOptions metricOptions)
         {
             return @"SetCommonValues('" + metricOptions.SignalID + @"','" + metricOptions.StartDate.ToShortDateString() +
@@ -952,7 +970,7 @@ namespace SPM.Controllers
                 }
             }
             StringBuilder sb = new StringBuilder();
-            sb.Append("/DefaultCharts/GetPedDelayMetricByUrl?");
+            sb.Append("/DefaultCharts/GetResidualQueueByUrl?");
             sb.Append("&SignalID=" + metricOptions.SignalID);
             string _startDate = metricOptions.StartDate.ToString().Trim();
             _startDate = _startDate.Replace(" ", "%20");
@@ -987,7 +1005,7 @@ namespace SPM.Controllers
                 }
             }
             StringBuilder sb = new StringBuilder();
-            sb.Append("/DefaultCharts/GetPedDelayMetricByUrl?");
+            sb.Append("/DefaultCharts/GetFlowRatesByUrl?");
             sb.Append("&SignalID=" + metricOptions.SignalID);
             string _startDate = metricOptions.StartDate.ToString().Trim();
             _startDate = _startDate.Replace(" ", "%20");

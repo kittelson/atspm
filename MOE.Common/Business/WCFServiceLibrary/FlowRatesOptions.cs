@@ -30,6 +30,7 @@ namespace MOE.Common.Business.WCFServiceLibrary
         {
             YAxisMax = 3;
             Y2AxisMax = 10;
+            MetricTypeID = 32;
         }
 
         public override List<string> CreateMetric()

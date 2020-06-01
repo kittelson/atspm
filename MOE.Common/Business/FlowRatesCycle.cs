@@ -27,12 +27,12 @@ namespace MOE.Common.Business
 
         private double GetSaturationFlowRate()
         {
-            return Lanes.Sum(l=>l.SaturationFlowRate) / Lanes.Where(l=>l.Saturation).Count();
+            return Lanes.Where(l => l.Saturation).Count() == 0 ? 0 : Lanes.Sum(l=>l.SaturationFlowRate) / Lanes.Where(l=>l.Saturation).Count();
         }
 
         private double GetPhaseFlowRate()
         {
-            return Lanes.Sum(l => l.PhaseFlowRate) / Lanes.Count();
+            return Lanes.Count() == 0 ? 0 : Lanes.Sum(l => l.PhaseFlowRate) / Lanes.Count();
         }
 
         public void SetDetections(List<Controller_Event_Log> eventsOut)

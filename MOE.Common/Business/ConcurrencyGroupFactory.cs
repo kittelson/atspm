@@ -19,32 +19,69 @@ namespace MOE.Common.Business
             var sig = signalRepository.GetVersionOfSignalByDate(signalID, startTime);
             List<Controller_Event_Log> barrierEvents;
 
-            
-            barrierEvents = celRepository.GetSignalEventsByEventCode(signalID, startTime, endTime, 31)
-                .OrderBy(c=>c.EventParam)
-                .ThenBy(c=>c.Timestamp)
-                .ToList();
-
             //Red to Red
-            var termEvents = celRepository.GetSignalEventsByEventCode(signalID, startTime, endTime, 11);
+            var termEventsAll = celRepository.GetSignalEventsByEventCode(signalID, startTime, endTime, 11);
 
-            for (var i = 0; i < barrierEvents.Count -1; i++)
+            foreach (var approachDir in sig.Approaches.Select(a => a.DirectionTypeID).Distinct())
             {
-                if (barrierEvents[i].EventParam == barrierEvents[i + 1].EventParam)
-                {
-                    
-                    foreach (var termEvent in termEvents.Where(e => e.Timestamp == barrierEvents[i + 1].Timestamp))
-                    {
-                        var concurrencyApproach = approachRepository.GetApproachBySignalPhase(termEvent.EventParam, signalID);
-                        var current = new ResidualQueueConcurrencyGroup(barrierEvents[i].Timestamp, barrierEvents[i + 1].Timestamp)
-                        {
-                            TerminationEvent = termEvent,
-                            Approach = concurrencyApproach
-                        };
-                        groups.Add(current);
-                    }
-                }
+                var approaches = sig.Approaches.Where(a => a.DirectionTypeID == approachDir);
+                var opposingApproaches = sig.Approaches.Where(a => a.DirectionTypeID == OpposingApproach(approachDir));
 
+                var primaryPhases = approaches.Select(a => a.ProtectedPhaseNumber)
+                    .Union(approaches.Where(a=>a.PermissivePhaseNumber != null).Select(a => (int)a.PermissivePhaseNumber));
+
+                var opposingPhases = opposingApproaches.Select(a => a.ProtectedPhaseNumber)
+                    .Union(approaches.Where(a => a.PermissivePhaseNumber != null).Select(a => (int)a.PermissivePhaseNumber));
+
+                var phases = primaryPhases.Union(opposingPhases);
+
+                //Red to Red End Clearance events for appraoch
+                var termEvents = celRepository.GetSignalEventsByEventCode(signalID, startTime, endTime, 11)
+                    .Where(c => phases.Contains(c.EventParam));
+
+                //Barrier Events for approach
+                barrierEvents = celRepository.GetSignalEventsByEventCode(signalID, startTime, endTime, 31)
+                    .Where(c => termEvents.Select(e=>e.Timestamp).Distinct().Contains(c.Timestamp))
+                    .OrderBy(c => c.EventParam)
+                    .ThenBy(c => c.Timestamp)
+                    .ToList();
+
+                for (var i = 0; i < barrierEvents.Count - 1; i++)
+                {
+                    //Same barrier #
+                    if (barrierEvents[i].EventParam == barrierEvents[i + 1].EventParam)
+                    {
+
+                        var barrierTermEvents = termEvents.Where(e => e.Timestamp >= barrierEvents[i + 1].Timestamp.AddSeconds(-5)
+                                                                     && e.Timestamp <= barrierEvents[i + 1].Timestamp);
+                        foreach (var termEvent in barrierTermEvents)
+                        {           
+                            var subjectPhase = termEvent;
+                            // if this is not a temrination event in the subject phase, find the closest primary phase termination event
+                            if (primaryPhases.Intersect(barrierTermEvents.Select(e => e.EventParam)).Count() == 0)
+                            {
+                                subjectPhase = termEvents.Where(e => primaryPhases.Contains(e.EventParam) 
+                                                                      && e.Timestamp <= barrierEvents[i + 1].Timestamp.AddSeconds(-5))
+                                                             .OrderByDescending(e=>e.Timestamp).FirstOrDefault();
+                                if (subjectPhase == null) continue;
+                            }
+                            else if (!primaryPhases.Contains(termEvent.EventParam))
+                            {
+                                continue;
+                            }
+
+                            var current = new ResidualQueueConcurrencyGroup(barrierEvents[i].Timestamp, barrierEvents[i + 1].Timestamp)
+                            {
+                                TerminationEvent = subjectPhase,
+                                Approach = approaches.Where(a => a.PermissivePhaseNumber == subjectPhase.EventParam ||
+                                                                 a.ProtectedPhaseNumber == subjectPhase.EventParam).First()
+                            };
+                            groups.Add(current);
+                            break;
+                        }
+                    }
+
+                }
             }
 
             var distinctDirections = groups.GroupBy(a => a.Approach.DirectionTypeID,
@@ -60,8 +97,8 @@ namespace MOE.Common.Business
                 var inputDetectorChannels = detectors.Where(d => d.DetectionTypes.Select(dt=>dt.DetectionTypeID).Contains(8)).Select(d => d.DetChannel).ToList();
                 var outputDetectorChannels = detectors.Where(d => d.DetectionTypes.Select(dt => dt.DetectionTypeID).Contains(9)).Select(d => d.DetChannel).ToList();
 
-                var inputEvents = celRepository.GetRecordsByParameterAndEvent(signalID, startTime, endTime, inputDetectorChannels, new List<int> { 82 });
-                var outputEvents = celRepository.GetRecordsByParameterAndEvent(signalID, startTime, endTime, outputDetectorChannels, new List<int> { 82 });
+                var inputEvents = celRepository.GetRecordsByParameterAndEvent(signalID, startTime, endTime, inputDetectorChannels.Count > 0 ? inputDetectorChannels : new List<int>() { 0 }, new List<int> { 82 });
+                var outputEvents = celRepository.GetRecordsByParameterAndEvent(signalID, startTime, endTime, outputDetectorChannels.Count > 0 ? outputDetectorChannels : new List<int>() { 0 }, new List<int> { 82 });
 
                 var directionGroups = groups.Where(g => g.Approach.DirectionTypeID == direction.Direction).ToList();
 
@@ -79,9 +116,34 @@ namespace MOE.Common.Business
                 }
 
             }
-
+//#if DEBUG
+//            using (System.IO.StreamWriter w = System.IO.File.AppendText($"C:\\temp\\Concurrency Groups {DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds}.csv"))
+//           {
+//               w.WriteLine("Start Time,End Time,Termination Event Time,Approach,Phase,Input Count,Output Count,Total Queue");
+//               foreach (ResidualQueueConcurrencyGroup group in groups)
+//               {
+//                   w.WriteLine($"{group.StartTime},{group.EndTime},{group.TerminationEvent.Timestamp},{group.Approach.DirectionType.Abbreviation},{group.TerminationEvent.EventParam},{group.InputDetectionCount},{group.OutputDetectionCount},{group.TotalQueue}");
+//               }
+//           }
+//#endif 
             return groups;
         }
-      
-    }
+
+        private static int OpposingApproach(int a)
+        {
+            switch (a)
+            {
+                case 1:
+                    return 2;
+                case 2:
+                    return 1;
+                case 3:
+                    return 4;
+                case 4:
+                    return 3;
+                default:
+                    return 0;
+            }
+        }
+    }   
 }
