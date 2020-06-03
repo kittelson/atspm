@@ -1,12 +1,8 @@
-﻿using MOE.Common.Business;
-using MOE.Common.Models;
-using System;
+﻿using MOE.Common.Models;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MOE.Common
+namespace MOE.Common.Business
 {
     public class FlowRatesLane
     {

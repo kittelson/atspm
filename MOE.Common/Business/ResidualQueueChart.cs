@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Web.UI.DataVisualization.Charting;
-using Microsoft.EntityFrameworkCore.Internal;
-using MOE.Common.Models;
-using MOE.Common.Models.Repositories;
 namespace MOE.Common.Business
 {
     class ResidualQueueChart
