@@ -26,6 +26,7 @@ namespace DecodeTrafficwareLogs
         private static bool writeToConsole;
         private static bool deleteFiles;
         private static string connectionString;
+        private static DateTime earliestAccepted;
         static void Main(string[] args)
         {
             CWD = Properties.Settings.Default.TWLogsPath;
@@ -33,6 +34,7 @@ namespace DecodeTrafficwareLogs
             writeToConsole = Properties.Settings.Default.WriteToConsole;
             deleteFiles = Properties.Settings.Default.DeleteFiles;
             connectionString = ConfigurationManager.ConnectionStrings["SPM"].ConnectionString;
+            earliestAccepted = Properties.Settings.Default.EarliestAcceptableDate;
 
             new Program().FindFiles();
             new Program().SaveEvents();
@@ -48,7 +50,6 @@ namespace DecodeTrafficwareLogs
         private void FindFiles()
         {
             List<string> dirList = new List<string>();
-            List<string> fileList = new List<string>();
 
             foreach (string s in Directory.GetDirectories(CWD))
             {
@@ -70,7 +71,7 @@ namespace DecodeTrafficwareLogs
 
         // standard Cubic filename format such as TRAF_01030_2022_03_21_1100.dat
         // and 60 minutes per file
-        private int ExistingRecords(string signal, string file, MOE.Common.Models.Repositories.IControllerEventLogRepository celRepository)
+        private int ExistingRecords(string signal, string file, IControllerEventLogRepository celRepository)
         {
             string[] filename = file.Split('_');
             DateTime start;
@@ -93,11 +94,7 @@ namespace DecodeTrafficwareLogs
         }
         private void DecodeTW(string dir, string file)
         {
-
-            //path to the decoder program
-            //string decoder = Properties.Settings.Default.DecoderPath;
-            //time in MS to wait for the decoder ot fail
-            int timeOut = 500;
+            int timeOut = 1000;
             bool fileDecoded = true;
 
             try
@@ -190,9 +187,7 @@ namespace DecodeTrafficwareLogs
                 string dirname = strsplit.Last();
                 string sigid = dirname;
                 var mostRecent = lastrecords[sigid];
-
                 WriteToConsole("Starting signal " + dirname);
-
 
                 var options1 = new ParallelOptions { MaxDegreeOfParallelism = Convert.ToInt32(Properties.Settings.Default.MaxThreads) };
                 foreach (var file in Directory.GetFiles(dir, "*.csv").OrderBy(f => f))
@@ -200,7 +195,7 @@ namespace DecodeTrafficwareLogs
                     // Records per file is lines minus 7 (6 header rows and 1 newline at the end)
                     if (countrecords[file] >= File.ReadAllLines(file).Length - 7)
                     {
-                        WriteToConsole(String.Format("Skipping {0} {1}, we already imported this.", (deleteFiles ? "and deleting" : ""), file));
+                        WriteToConsole(String.Format("Skipping {0}{1}.", (deleteFiles ? " and deleting" : ""), file));
                         if (deleteFiles)
                         {
                             try
@@ -223,8 +218,9 @@ namespace DecodeTrafficwareLogs
                     elTable.Columns.Add("EventParam", typeof(Int32));
 
                     startTime = DateTime.Now;
-                    int lineNumber = 6;
+                    int lineNumber = 0;
                     int skipped = 0;
+                    int skippedEarly = 0;
 
                     foreach (string line in File.ReadAllLines(file).Skip(6))
                     {
@@ -249,6 +245,13 @@ namespace DecodeTrafficwareLogs
                                 WriteToConsole($"Error converting {lineSplit[0]} to Datetime on line {lineNumber}.");
                                 lineError = true;
                             }
+
+                            if (timeStamp <= earliestAccepted)
+                            {
+                                skippedEarly += 1;
+                                continue;
+                            }
+
                             if (timeStamp <= mostRecent)
                             {
                                 skipped += 1;
@@ -288,6 +291,12 @@ namespace DecodeTrafficwareLogs
                     {
                         WriteToConsole($"Skipped {skipped} existing records");
                     }
+                    
+                    if (skippedEarly > 0)
+                    {
+                        WriteToConsole($"Skipped {skippedEarly} records prior to {earliestAccepted}");
+                    }
+
 
                     MOE.Common.Business.BulkCopyOptions Options = new MOE.Common.Business.BulkCopyOptions(connectionString, Properties.Settings.Default.DestinationTableName,
                         Properties.Settings.Default.WriteToConsole, Properties.Settings.Default.forceNonParallel, Properties.Settings.Default.MaxThreads, Properties.Settings.Default.DeleteFile,
