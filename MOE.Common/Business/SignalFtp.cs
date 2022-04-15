@@ -20,6 +20,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 using MOE.Common.Models;
 using MOE.Common.Models.Repositories;
 using MOE.Common.Properties;
+using WinSCP;
 
 namespace MOE.Common.Business
 {
@@ -167,7 +168,11 @@ namespace MOE.Common.Business
 
         public void GetCurrentRecords()
         {
-
+            if (Signal.ControllerType.FTPDirectory.StartsWith("sftp://"))
+            {
+                GetCurrentRecordsSftpAsync();
+                return;
+            }
             var errorRepository = ApplicationEventRepositoryFactory.Create();
             FtpClient ftpClient = new FtpClient(Signal.IPAddress);
             ftpClient.Credentials = new NetworkCredential(Signal.ControllerType.UserName, Signal.ControllerType.Password);
@@ -336,6 +341,54 @@ namespace MOE.Common.Business
             }
         }
 
+        public void GetCurrentRecordsSftpAsync()
+        {
+            // Run the sftp fetch operation async
+            Thread sftpFetch = new Thread(delegate ()
+            {
+                // Setup session options
+                SessionOptions sessionOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = Signal.IPAddress,
+                    UserName = Signal.ControllerType.UserName,
+                    Password = Signal.ControllerType.Password,
+                    SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny
+                };
+                string remoteDirectory = Signal.ControllerType.FTPDirectory.Replace("sftp://", "");
+                string localDirectory = SignalFtpOptions.LocalDirectory + Signal.SignalID + @"\";
+
+                using (Session session = new Session())
+                {
+                    try
+                    {
+                        // Connect
+                        session.Open(sessionOptions);
+                        Console.WriteLine($"Connecting to {sessionOptions.UserName}@{sessionOptions.HostName}:{remoteDirectory}...");
+                        // Download files
+                        TransferOptions transferOptions = new TransferOptions();
+                        transferOptions.TransferMode = TransferMode.Binary;
+
+                        TransferOperationResult transferResult;
+                        transferResult = session.GetFiles($"{remoteDirectory}/*.dat", localDirectory, SignalFtpOptions.DeleteAfterFtp, transferOptions);
+
+                        // Throw on any error
+                        transferResult.Check();
+
+                        // Print results
+                        foreach (TransferEventArgs transfer in transferResult.Transfers)
+                        {
+                            Console.WriteLine("Download of {0} succeeded", transfer.FileName);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Error: {0}", e);
+                    }
+                }
+            });
+            sftpFetch.Start();
+        }
         private void DeleteAllEosFiles(Signal signal, List<string> retrievedFiles)
         {
             //Console.WriteLine(); 
