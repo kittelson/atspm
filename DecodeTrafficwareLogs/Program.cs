@@ -73,13 +73,13 @@ namespace DecodeTrafficwareLogs
         // and 60 minutes per file
         private int ExistingRecords(string signal, string file, IControllerEventLogRepository celRepository)
         {
-            string[] filename = file.Split('_');
+            string[] filename = file.Split('_').Reverse().Take(4).Reverse().ToArray();
             DateTime start;
             try { 
-            start = new DateTime(Int32.Parse(filename[2]),
-                                        Int32.Parse(filename[3]),
-                                        Int32.Parse(filename[4]),
-                                        Int32.Parse(filename[5].Substring(0, 2)),
+            start = new DateTime(Int32.Parse(filename[0]),
+                                        Int32.Parse(filename[1]),
+                                        Int32.Parse(filename[2]),
+                                        Int32.Parse(filename[3].Substring(0, 2)),
                                         0,
                                         0,
                                         0);
