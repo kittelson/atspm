@@ -349,7 +349,7 @@ namespace MOE.Common.Business
                 // Setup session options
                 SessionOptions sessionOptions = new SessionOptions
                 {
-                    Protocol = Protocol.Sftp,
+                    Protocol = Protocol.Scp,
                     HostName = Signal.IPAddress,
                     UserName = Signal.ControllerType.UserName,
                     Password = Signal.ControllerType.Password,
