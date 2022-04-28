@@ -168,9 +168,9 @@ namespace MOE.Common.Business
 
         public void GetCurrentRecords()
         {
-            if (Signal.ControllerType.FTPDirectory.StartsWith("sftp://"))
+            if (Signal.ControllerType.FTPDirectory.StartsWith("scp://"))
             {
-                GetCurrentRecordsSftpAsync();
+                GetCurrentRecordsScpAsync();
                 return;
             }
             var errorRepository = ApplicationEventRepositoryFactory.Create();
@@ -180,7 +180,6 @@ namespace MOE.Common.Business
             ftpClient.ReadTimeout = SignalFtpOptions.FtpReadTimeoutInSeconds * 1000;
             if (Signal.ControllerType.ActiveFTP)
             {
-                //    ftpClient.DataConnectionType = FtpDataConnectionType.AutoActive; 
                 ftpClient.DataConnectionType = FtpDataConnectionType.AutoActive;
             }
 
@@ -341,10 +340,10 @@ namespace MOE.Common.Business
             }
         }
 
-        public void GetCurrentRecordsSftpAsync()
+        public void GetCurrentRecordsScpAsync()
         {
             // Run the sftp fetch operation async
-            Thread sftpFetch = new Thread(delegate ()
+            Thread scpFetch = new Thread(delegate ()
             {
                 // Setup session options
                 SessionOptions sessionOptions = new SessionOptions
@@ -355,7 +354,7 @@ namespace MOE.Common.Business
                     Password = Signal.ControllerType.Password,
                     SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny
                 };
-                string remoteDirectory = Signal.ControllerType.FTPDirectory.Replace("sftp://", "");
+                string remoteDirectory = Signal.ControllerType.FTPDirectory.Replace("scp://", "");
                 string localDirectory = SignalFtpOptions.LocalDirectory + Signal.SignalID + @"\";
 
                 using (Session session = new Session())
@@ -383,11 +382,11 @@ namespace MOE.Common.Business
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Error: {0}", e);
+                        Console.WriteLine("Error on {0} ({1}): {2}", Signal.SignalID, Signal.IPAddress, e);
                     }
                 }
             });
-            sftpFetch.Start();
+            scpFetch.Start();
         }
         private void DeleteAllEosFiles(Signal signal, List<string> retrievedFiles)
         {
