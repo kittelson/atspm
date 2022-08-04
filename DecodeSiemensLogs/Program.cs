@@ -227,7 +227,7 @@ namespace DecodeSiemensLogs
             {
                 dirList.Add(s);
                 var signalID = s.Split(new char[] { '\\' }).Last();
-                lastrecords.Add(signalID, celRepository.GetMostRecentRecordTimestamp(signalID));
+                lastrecords.Add(signalID, celRepository.GetMostRecentRecordTimestamp(signalID, DateTime.Today.AddDays(1)));
                 foreach (var file in Directory.GetFiles(s))
                 {
                     countrecords.Add(file, ExistingRecords(signalID, file, celRepository));

@@ -68,6 +68,7 @@ namespace MOE.Common.Models.Repositories
         int GetApproachEventsCountBetweenDates(int approachId, DateTime startTime, DateTime endTime,
             int phaseNumber);
         DateTime GetMostRecentRecordTimestamp(string signalID);
+        DateTime GetMostRecentRecordTimestamp(string signalID, DateTime priorTo);
         bool CheckForRecords(string signalId, DateTime startTime, DateTime endTime);
     }
 }
