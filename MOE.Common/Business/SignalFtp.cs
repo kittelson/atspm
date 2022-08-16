@@ -352,7 +352,8 @@ namespace MOE.Common.Business
                     HostName = Signal.IPAddress,
                     UserName = Signal.ControllerType.UserName,
                     Password = Signal.ControllerType.Password,
-                    SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny
+                    SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny,
+                    Timeout = new TimeSpan(0, 0, SignalFtpOptions.FtpConectionTimeoutInSeconds)
                 };
                 string remoteDirectory = Signal.ControllerType.FTPDirectory.Replace("scp://", "");
                 string localDirectory = SignalFtpOptions.LocalDirectory + Signal.SignalID + @"\";
@@ -363,13 +364,16 @@ namespace MOE.Common.Business
                     {
                         // Connect
                         session.Open(sessionOptions);
+
+                        // cd to the remote directory, which might be a symlink.
+                        session.ExecuteCommand($"cd {remoteDirectory}");
                         Console.WriteLine($"Connecting to {sessionOptions.UserName}@{sessionOptions.HostName}:{remoteDirectory}...");
                         // Download files
                         TransferOptions transferOptions = new TransferOptions();
                         transferOptions.TransferMode = TransferMode.Binary;
 
                         TransferOperationResult transferResult;
-                        transferResult = session.GetFiles($"{remoteDirectory}/*.dat", localDirectory, SignalFtpOptions.DeleteAfterFtp, transferOptions);
+                        transferResult = session.GetFiles($"*.dat", localDirectory, SignalFtpOptions.DeleteAfterFtp, transferOptions);
 
                         // Throw on any error
                         transferResult.Check();
