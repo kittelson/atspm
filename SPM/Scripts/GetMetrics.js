@@ -101,6 +101,12 @@ function GetPreemptMetric(metricTypeID) {
 function GetPedDelayMetric(metricTypeID) {
     var tosend = GetCommonValues();
     tosend.MetricTypeID = metricTypeID;
+    tosend.TimeBuffer = $("#TimeBuffer").val();
+    tosend.ShowPedBeginWalk = $("#ShowPedBeginWalk").is(":checked");
+    tosend.ShowCycleLength = $("#ShowCycleLength").is(":checked");
+    tosend.ShowPercentDelay = $("#ShowPercentDelay").is(":checked");
+    tosend.ShowPedRecall = $("#ShowPedRecall").is(":checked");
+    tosend.PedRecallThreshold = $("#PedRecallThreshold").val();
     GetMetric(urlpathPedDelay, tosend);
 }
 
@@ -153,6 +159,7 @@ function GetTimingAndActuationsMetric(metricTypeID) {
     tosend.ShowLinesStartEnd = $("#ShowLinesStartEnd").is(":checked");
     tosend.ShowEventPairs = $("#ShowEventPairs").is(":checked");
     tosend.ShowRawEventData = $("#ShowRawEventData").is(":checked");
+    tosend.ShowPermissivePhases = $("#ShowPermissivePhases").is(":checked");
     tosend.ExtendVsdSearch = $("#ExtendVsdSearch").val();
     tosend.ShowVehicleSignalDisplay = $("#ShowVehicleSignalDisplay").is(":checked");
     tosend.ShowPedestrianIntervals = $("#ShowPedestrianIntervals").is(":checked");
@@ -247,7 +254,7 @@ function GetLeftTurnGapAnalysisMetric(metricTypeID) {
 
 function GetWaitTimeMetric(metricTypeID) {
     var toSend = GetCommonValues();
-    toSend.metricTypeID = metricTypeID;
+    toSend.MetricTypeID = metricTypeID;
     toSend.ShowPlanStripes = $("#ShowPlanStripes").is(":checked");
     GetMetric(urlpathWaitTime, toSend);
 }
