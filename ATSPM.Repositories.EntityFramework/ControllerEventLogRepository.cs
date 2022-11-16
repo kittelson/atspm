@@ -674,5 +674,20 @@ namespace ATSPM.Infrastructure.Repositories.EntityFramework
                 return new DateTime();
             }
         }
+        public DateTime GetMostRecentRecordTimestamp(string signalID, DateTime priorTo)
+        {
+            ControllerEventLog row = (from r in _db.ControllerEventLogs
+                                                          where r.SignalId == signalID && r.Timestamp < priorTo
+                                                          orderby r.Timestamp descending
+                                                          select r).Take(1).FirstOrDefault();
+            if (row != null)
+            {
+                return row.Timestamp;
+            }
+            else
+            {
+                return new DateTime();
+            }
+        }
     }
 }

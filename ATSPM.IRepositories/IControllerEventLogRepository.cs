@@ -72,6 +72,9 @@ namespace ATSPM.IRepositories
         int GetApproachEventsCountBetweenDates(int approachId, DateTime startTime, DateTime endTime,
             int phaseNumber, IApproachRepository approachRepository);
         DateTime GetMostRecentRecordTimestamp(string signalID);
+
+        DateTime GetMostRecentRecordTimestamp(string signalID, DateTime priorTo);
+
         bool CheckForRecords(string signalId, DateTime startTime, DateTime endTime);
 
         ControllerEventLog GetFirstEventAfterDateByEventCodesAndParameter(string signalId, List<int> eventCodes,
