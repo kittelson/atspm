@@ -143,5 +143,15 @@ namespace MOE.Common.Models.Repositories
                 AddOrUpdate(metricComment);
             }
         }
+
+        public Dictionary<string, string> GetLatestCommentBySignalForType(int metricID)
+        {
+            var lookupTable = db.MetricComments.Where(c => c.MetricTypeIDs.Contains(metricID))
+                .GroupBy(c => c.SignalID)
+                .ToDictionary(g => g.Key, 
+                    g => g.OrderByDescending(c => c.TimeStamp).FirstOrDefault()?.CommentText);
+            return lookupTable;
+            
+        }
     }
 }

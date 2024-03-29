@@ -11,5 +11,6 @@ namespace MOE.Common.Models.Repositories
         void Remove(MetricComment metricComment);
         MetricComment GetLatestCommentForReport(string signalID, int metricID);
         List<MetricType> GetMetricTypesByMetricComment(MetricComment metricComment);
+        Dictionary<string, string> GetLatestCommentBySignalForType(int metricID);
     }
 }
