@@ -1,21 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.IO;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Collections.Concurrent;
-using System.Collections.Specialized;
 using System.Configuration;
-using System.Net.Mail;
-using MOE.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Data;
-using System.Data.SqlClient;
-using System.Timers;
 using MOE.Common.Models.Repositories;
+using System.Data.Entity;
 
 namespace DecodeATMSNowLogs
 {
@@ -39,6 +31,10 @@ namespace DecodeATMSNowLogs
             folderPrefix = Properties.Settings.Default.ATMSNowFolderPrefix;
 
             new Program().SaveEvents();
+#if DEBUG
+            Console.WriteLine("Done, press any key.");
+            Console.ReadKey();
+#endif
         }
 
         private void WriteToConsole(string msg)
@@ -105,7 +101,6 @@ namespace DecodeATMSNowLogs
                     continue;
                 }
 
-               // dirList.Add(s);
                 var signalID = dirToSignalMapping[s];
                 lastrecords.Add(signalID, celRepository.GetMostRecentRecordTimestamp(signalID, DateTime.Now.AddMinutes(60)));
                 foreach (var file in Directory.GetFiles(s))
@@ -121,8 +116,15 @@ namespace DecodeATMSNowLogs
                 //This is the only way the program knows the signal number of the controller.
                 string[] strsplit = dir.Split(new char[] { '\\' });
                 string dirname = strsplit.Last();
+
+                // The key must exist since the outter loop is over the .Keys collection
                 string sigid = dirToSignalMapping[dir];
-                var mostRecent = lastrecords[sigid];
+                var mostRecent = earliestAccepted;
+                if (!lastrecords.TryGetValue(sigid, out mostRecent))
+                {
+                    WriteToConsole($"Could not find any existing records for {sigid}.  Defaulting to inserting anything after {mostRecent}.");
+                }
+
                 WriteToConsole($"Starting signal {sigid} reading from {dirname}");
 
                 var options1 = new ParallelOptions { MaxDegreeOfParallelism = Convert.ToInt32(Properties.Settings.Default.MaxThreads) };
@@ -233,13 +235,19 @@ namespace DecodeATMSNowLogs
                         WriteToConsole($"Skipped {skippedEarly} records prior to {earliestAccepted}");
                     }
 
-                    MOE.Common.Business.BulkCopyOptions Options = new MOE.Common.Business.BulkCopyOptions(connectionString, Properties.Settings.Default.DestinationTableName,
-                        Properties.Settings.Default.WriteToConsole, Properties.Settings.Default.forceNonParallel, Properties.Settings.Default.MaxThreads, false,
-                        Properties.Settings.Default.EarliestAcceptableDate, Properties.Settings.Default.BulkCopyBatchSize, Properties.Settings.Default.BulkCopyTimeOut);
+                    if (elTable.Rows.Count > 0)
+                    {
+                        MOE.Common.Business.BulkCopyOptions Options = new MOE.Common.Business.BulkCopyOptions(connectionString, Properties.Settings.Default.DestinationTableName,
+                            Properties.Settings.Default.WriteToConsole, Properties.Settings.Default.forceNonParallel, Properties.Settings.Default.MaxThreads, false,
+                            Properties.Settings.Default.EarliestAcceptableDate, Properties.Settings.Default.BulkCopyBatchSize, Properties.Settings.Default.BulkCopyTimeOut);
 
-                    // The Signal class has a static method to insert the table into the DB.  We are using that.
-                    MOE.Common.Business.SignalFtp.BulktoDb(elTable, Options, Properties.Settings.Default.DestinationTableName);
-
+                        // The Signal class has a static method to insert the table into the DB.  We are using that.
+                        MOE.Common.Business.SignalFtp.BulktoDb(elTable, Options, Properties.Settings.Default.DestinationTableName);
+                    }
+                    else
+                    {
+                        WriteToConsole($"No new records for {sigid}");
+                    }
                     if (deleteFiles)
                     {
                         try
